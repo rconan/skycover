@@ -280,10 +280,10 @@ int main() {
         }
 
         count++;
-        if (count > 10) { break; }
+        if (count > 20) { break; }
     }
     
-    // dogrid_file(ValidMagnitudes, count);
+    dogrid_file(ValidMagnitudes, count);
 
     return 0;
 }

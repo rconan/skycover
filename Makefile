@@ -2,4 +2,4 @@ SRCS = point.cpp probe.cpp star.cpp stargroup.cpp polygon.cpp collisions.cpp pro
 CC   = g++
 
 skycov: skycov.cpp
-	$(CC) $(SRCS) skycov.cpp -o skycov 
+	$(CC) -std=c++11 $(SRCS) skycov.cpp -o skycov 
