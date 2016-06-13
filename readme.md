@@ -22,7 +22,7 @@ I have also successfully compiled and run the program on Ubuntu 14.04
 To build the project, run `make` in the project directory. This will
 compile an executable named <b>skycov</b>. Type `./skycov` to run.
 
-The program will read in star field data from star catelogues in Bes2,
+The program will read in star field data from star catalogues in Bes2,
 and compute the probabilities of finding guide star/wave front star
 combinations where the positions of the probes are such that there are
 no collisions. There must be three wave front stars of the same
