@@ -12,6 +12,9 @@ what I get when I run `g++ --version`.
     Configured with:
     --prefix=/Applications/Xcode.app/Contents/Developer/usr
     --with-gxx-include-dir=/usr/include/c++/4.2.1
+    Apple LLVM version 6.1.0 (clang-602.0.53) (based on LLVM 3.6.0svn)
+    Target: x86_64-apple-darwin15.4.0
+    Thread model: posix
 
 I have also successfully compiled and run the program on Ubuntu 14.04
 64-bit.
