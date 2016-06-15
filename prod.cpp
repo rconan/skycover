@@ -41,7 +41,13 @@ CombinationGenerator::CombinationGenerator(vector<int> _list_sizes) {
     n = _list_sizes.size();
     indices = zeros(n);
     list_sizes = _list_sizes;
+
     done = 0;
+    for (int i=0; i<_list_sizes.size(); i++) {
+      if (_list_sizes[i] == 0) {
+        done = 1;
+      }
+    }
 }
 
 CombinationGenerator::~CombinationGenerator() { }

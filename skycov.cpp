@@ -2,6 +2,7 @@
 #include "stargroup.h"
 #include "probe.h"
 #include "prod.h"
+#include "probe.h"
 #include "collisions.h"
 #include <dirent.h>
 #include <math.h>
@@ -16,6 +17,7 @@
 using namespace std;
 
 
+#define PI       3.1415926535
 #define MINRANGE 0.1
 #define MAXRANGE 0.167
 
@@ -41,20 +43,46 @@ vector<int> get_list_sizes(vector< vector<Star> > lists) {
     return result;
 }
 
+bool safe_distance_from_center(Star star) {
+  Point star_pt(star.x, star.y), origin(0, 0);
+  
+  double dist = distance(star_pt, origin);
+  
+  if (MINRANGE < dist && dist < MAXRANGE) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
+//   Point star_pt;
+//   vector<Star> result;
+//   int i;
+// 
+//   for (i=0; i<stars.size(); i++) {
+//     star_pt = Point(stars[i].x, stars[i].y);
+//     if (safe_distance_from_center(stars[i]) && (distance(star_pt, probe.center) < probe.radius)) {
+//       result.push_back(stars[i]);
+//     }
+//   }
+// 
+//   return result;
+// }
 
 vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
-    vector<Star> result;
-    int i;
+  Point star_pt;
+  vector<Star> result;
+  int i;
 
-    for (i=0; i<stars.size(); i++) {
-        double distance = sqrt( pow(probe.center.x - stars[i].x, 2) +
-                pow(probe.center.y - stars[i].y, 2) );
-        if ( (MINRANGE < distance && distance < MAXRANGE) && (distance < probe.radius) ) {
-            result.push_back(stars[i]);
-        }
+  for (i=0; i<stars.size(); i++) {
+    star_pt = Point(stars[i].x, stars[i].y);
+    if (safe_distance_from_center(stars[i]) && (probe.can_cover(stars[i]))) {
+      result.push_back(stars[i]);
     }
+  }
 
-    return result;
+  return result;
 }
 
 vector< vector<Star> > get_probe_stars(vector<Star> stars, vector<Probe> probes) {
@@ -123,6 +151,24 @@ vector<string> dimmer_wfs(string magpair) {
     return dimmers;
 }
 
+void test_group(vector<Star> probestars, CombinationGenerator &stargroups, map<string, bool> &valid_mags) {
+  string magpair;
+
+  m.lock();
+  StarGroup group = StarGroup(apply_indices(probestars, stargroups.next()));
+  m.unlock();
+  
+  if ( group.valid() ) {
+    if ( ! has_collisions(group, probes) ) {
+      magpair = group.magpair();
+      valid_mags[magpair] = true;
+
+      for ( string dimmer_pair : dimmer_wfs(magpair) ) { valid_mags[dimmer_pair] = true; }
+      for ( string dimmer_pair : dimmer_gdr(magpair) ) { valid_mags[dimmer_pair] = true; }
+    }
+  }
+}
+
 map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe> probes) {
     int i;
     string current_pair;
@@ -132,27 +178,9 @@ map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe
 
     int count = 1;
     while (! stargroups.done) {
-        // cout << "group #" << count << endl;
-        // count++;
-
-        StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
-        // current_group.print();
-
-        if ( current_group.valid() ) {
-
-            if ( ! has_collisions(current_group, probes) ) {
-                current_pair = current_group.magpair();
-                valid_mags_map[current_pair] = true;
-
-                for ( string magpair : dimmer_wfs(current_pair) ) {
-                    valid_mags_map[magpair] = true;
-                }
-                for ( string magpair : dimmer_gdr(current_pair) ) {
-                    valid_mags_map[magpair] = true;
-                }
-            }
-        }
-    }
+        thread thread1(test_group, &probestars, &stargroups, &valid_mags_map);
+        thread thread1(test_group, &probestars, &stargroups, &valid_mags_map);
+   }
 
     return valid_mags_map;
 }
@@ -163,7 +191,8 @@ vector<Star> load_stars(string filename) {
     std::ifstream infile(filename);
 
     int current_line = 1;
-    for ( string line; getline(infile, line); ) {
+    string line; getline(infile, line);
+    for ( ; getline(infile, line); ) {
         if (current_line > 2) {
             tokens = split(line, '\t');
             double x = stod(tokens[0]);
@@ -223,31 +252,14 @@ int main() {
     Point probe3_ctr(-0.25, 0);
     Point probe4_ctr(0, -0.25);
 
+    double range_width = 0.4;
+
+    Probe probe1(27, 94.5, 72);
+    Probe probe2(121.5, 166.5, 144);
+    Probe probe3(-27, -94.5, -72);
+    Probe probe4(-121.5, -166.5, -144);
+
     Point origin(0, 0);
-
-    Probe probe1(probe1_ctr, 0.22, 0, probe1_ctr);
-    probe1.add_pt(0.25, 0.012);
-    probe1.add_pt(0.09, 0.012);
-    probe1.add_pt(0.09, -0.012);
-    probe1.add_pt(0.25, -0.012);
-
-    Probe probe2(probe2_ctr, 0.22, 1, probe2_ctr);
-    probe2.add_pt(0.012, 0.25);
-    probe2.add_pt(-0.012, 0.25);
-    probe2.add_pt(-0.012, 0.09);
-    probe2.add_pt(0.012, 0.09);
-
-    Probe probe3(probe3_ctr, 0.22, 0, probe3_ctr);
-    probe3.add_pt(-0.25, 0.012);
-    probe3.add_pt(-0.09, 0.012);
-    probe3.add_pt(-0.09, -0.012);
-    probe3.add_pt(-0.25, -0.012);
-
-    Probe probe4(probe4_ctr, 0.22, 1, probe4_ctr);
-    probe4.add_pt(0.012, -0.25);
-    probe4.add_pt(-0.012, -0.25);
-    probe4.add_pt(-0.012, -0.09);
-    probe4.add_pt(0.012, -0.09);
 
     vector<Probe> probes;
     probes.push_back(probe1);
@@ -255,10 +267,9 @@ int main() {
     probes.push_back(probe3);
     probes.push_back(probe4);
 
-
     vector<Star>  stars;
 
-    map<string, int> ValidMagnitudes;
+    map<string, int>  ValidMagnitudes;
     map<string, bool> CurrentFileValidMagnitudes;
 
     int count = 0;
@@ -266,6 +277,7 @@ int main() {
     vector<string> starfield_files = files_in_dir("Bes2/");
     vector<string>::iterator curr_path;
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
+        if (count > 100) { break; }
 
         cerr << "Processing file " << *curr_path << endl;
         stars = load_stars(*curr_path);
@@ -280,7 +292,6 @@ int main() {
         }
 
         count++;
-        if (count > 20) { break; }
     }
     
     dogrid_file(ValidMagnitudes, count);

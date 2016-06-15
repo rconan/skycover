@@ -30,6 +30,7 @@ class Polygon {
   ~Polygon();
 
   int npoints;
+  void add_pt(double x, double y);
   void add_pt(Point pt);
   vector<Point> points;
   vector<Edge>  edges();
@@ -38,6 +39,9 @@ class Polygon {
   double miny;
 
   void polyprint();
+  bool point_in_poly(Point p);
+  vector<double> ycoords();
+  vector<double> xcoords();
 };
 
 #endif
