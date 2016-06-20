@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
-#include <tablelib/table.h>
+#include <regex>
 #include <vector>
 #include <map>
 #include <iostream>
@@ -55,21 +55,6 @@ bool safe_distance_from_center(Star star) {
   }
 }
 
-// vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
-//   Point star_pt;
-//   vector<Star> result;
-//   int i;
-// 
-//   for (i=0; i<stars.size(); i++) {
-//     star_pt = Point(stars[i].x, stars[i].y);
-//     if (safe_distance_from_center(stars[i]) && (distance(star_pt, probe.center) < probe.radius)) {
-//       result.push_back(stars[i]);
-//     }
-//   }
-// 
-//   return result;
-// }
-
 vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
   Point star_pt;
   vector<Star> result;
@@ -85,12 +70,49 @@ vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
   return result;
 }
 
+int partition(vector<Star>& stars, int p, int q)
+{
+    Star x = stars[p];
+    int i = p;
+    int j;
+
+    for(j=p+1; j<q; j++)
+    {
+        if(stars[j].r <= x.r)
+        {
+            i = i+1;
+            swap(stars[i], stars[j]);
+        }
+
+    }
+
+    swap(stars[i], stars[p]);
+
+    return i;
+}
+
+// Implementation of quicksort on Star objects. Sorts by magnitude.
+void star_sort(vector<Star>& stars, int p, int q)
+{
+    int r;
+    if(p < q)
+    {
+        r = partition(stars, p, q);
+        star_sort(stars, p, r);  
+        star_sort(stars, r+1, q);
+    }
+}
+
 vector< vector<Star> > get_probe_stars(vector<Star> stars, vector<Probe> probes) {
     int i;
     vector< vector<Star> > result;
 
     for (i=0; i<probes.size(); i++) {
         result.push_back(in_probe_range(stars, probes[i]));
+    }
+
+    for (i=0; i<result.size(); i++) {
+      star_sort(result[i], 0, result[i].size());
     }
 
     return result;
@@ -151,36 +173,27 @@ vector<string> dimmer_wfs(string magpair) {
     return dimmers;
 }
 
-void test_group(vector<Star> probestars, CombinationGenerator &stargroups, map<string, bool> &valid_mags) {
-  string magpair;
-
-  m.lock();
-  StarGroup group = StarGroup(apply_indices(probestars, stargroups.next()));
-  m.unlock();
-  
-  if ( group.valid() ) {
-    if ( ! has_collisions(group, probes) ) {
-      magpair = group.magpair();
-      valid_mags[magpair] = true;
-
-      for ( string dimmer_pair : dimmer_wfs(magpair) ) { valid_mags[dimmer_pair] = true; }
-      for ( string dimmer_pair : dimmer_gdr(magpair) ) { valid_mags[dimmer_pair] = true; }
-    }
-  }
-}
-
 map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe> probes) {
     int i;
     string current_pair;
+    StarGroup current_group;
     map<string, bool> valid_mags_map;
 
     CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
 
     int count = 1;
     while (! stargroups.done) {
-        thread thread1(test_group, &probestars, &stargroups, &valid_mags_map);
-        thread thread1(test_group, &probestars, &stargroups, &valid_mags_map);
-   }
+      current_group = StarGroup(apply_indices(probestars, stargroups.next()));
+      if ( current_group.valid() ) {
+        if ( ! has_collisions(current_group, probes) ) {
+          current_pair = current_group.magpair();
+          valid_mags_map[current_pair] = true;
+
+          for ( string dimmer_pair : dimmer_wfs(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
+          for ( string dimmer_pair : dimmer_gdr(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
+        }
+      }
+    }
 
     return valid_mags_map;
 }
@@ -211,23 +224,25 @@ map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> prob
     return get_valid_mags(get_probe_stars(stars, probes), probes);
 }
 
-vector<string> files_in_dir(string dirname) {
-    ostringstream path;
-    vector<string> filenames;
-    DIR *pDIR;
-    struct dirent *entry;
-    if( (pDIR = opendir(dirname.c_str())) != NULL ) {
-        while( (entry = readdir(pDIR)) != NULL ) {
-            if( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 ) {
-                path.str(std::string());
-                path << dirname << entry->d_name;
-                filenames.push_back(path.str());
-            }
+vector<string> files_in_dir(string dirname, char *regexp) {
+  ostringstream path;
+  vector<string> filenames;
+  DIR *pDIR;
+  struct dirent *entry;
+  if( (pDIR = opendir(dirname.c_str())) != NULL ) {
+    while( (entry = readdir(pDIR)) != NULL ) {
+      if( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 ) {
+        if (regex_match(entry->d_name, regex(regexp))) {
+          path.str(std::string());
+          path << dirname << entry->d_name;
+          filenames.push_back(path.str());
         }
-        closedir(pDIR);
+      }
     }
+    closedir(pDIR);
+  }
 
-    return filenames;
+  return filenames;
 }
 
 void dogrid_file(map<string, int> ValidMags, double nfiles) {
@@ -246,7 +261,7 @@ void dogrid_file(map<string, int> ValidMags, double nfiles) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     Point probe1_ctr(0.25, 0);
     Point probe2_ctr(0, 0.25);
     Point probe3_ctr(-0.25, 0);
@@ -274,11 +289,9 @@ int main() {
 
     int count = 0;
 
-    vector<string> starfield_files = files_in_dir("Bes2/");
+    vector<string> starfield_files = files_in_dir("Bes2/", argv[1]);
     vector<string>::iterator curr_path;
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
-        if (count > 100) { break; }
-
         cerr << "Processing file " << *curr_path << endl;
         stars = load_stars(*curr_path);
         CurrentFileValidMagnitudes = valid_mags_in_starfield(stars, probes);

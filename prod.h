@@ -15,4 +15,5 @@ class CombinationGenerator {
         vector<int> indices;
         vector< vector<int> > lists;
         vector<int> next();
+        void optimalprune(int diag);
 };
