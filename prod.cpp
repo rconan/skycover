@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include "prod.h"
 #include "star.h"
 using namespace std;
@@ -26,9 +27,7 @@ void pvector(vector<int> v) {
 
 void pdimvector(vector< vector<int> > dims) {
   for ( vector<int> dim : dims ) {
-    cout << "{";
     pvector(dim);
-    cout << "} ";
   }
   cout << endl;
 }
@@ -42,78 +41,29 @@ vector<int> vrange(int start, int end) {
   return result;
 }
 
-CombinationGenerator::CombinationGenerator(vector< vector<int> > _lists) {
-    n = _lists.size();
-    indices = zeros(n);
-    lists = _lists;
-}
-
-CombinationGenerator::CombinationGenerator(vector<int> _list_sizes) {
-    n = _list_sizes.size();
-    indices = zeros(n);
-    list_sizes = _list_sizes;
-
-    done = 0;
-    for (int i=0; i<_list_sizes.size(); i++) {
-      if (_list_sizes[i] == 0) {
-        done = 1;
-      }
-    }
-}
-
-CombinationGenerator::~CombinationGenerator() { }
-
-vector<int> CombinationGenerator::next() {
-    int i, j;
-    vector<int> result;
-    
-    for (i=0; i<n; i++) {
-        result.push_back(indices[i]);
-    }
-
-    for (i=n-1; i>-1; i--) {
-        if (indices[i] < list_sizes[i] - 1) {
-            indices[i] += 1;
-            for (j=i+1; j<n; j++) {
-                indices[j] = 0;
-            }
-            break;
-        }
-    }
-
-    if (i == -1) { done = 1; }
-
-    return result;
-}
-
-vector<int> get_list_sizes(vector< vector<int> > lists) {
-    int i;
-    vector<int> result;
-
-    for (i=0; i<lists.size(); i++) {
-        result.push_back(lists[i].size());
-    }
-
-    return result;
-}
-
 int maxidx(vector<int> dim)   { return dim[0]; }
 int curridx(vector<int> dim)  { return dim[1]; }
 int startidx(vector<int> dim) { return dim[2]; }
 
-vector< vector<int> > initialize(vector< vector<int> > dims, int lvl) {
-  for (int i=dims.size()-1; i>=0; i--) {
-    dims[i][1] = min(maxidx(dims[i]), lvl);
-    lvl -= curridx(dims[i]);
+void CombinationGenerator::initialize() {
+  int lvl_remaining;
 
-    if ( lvl == 0 ) { break; }
+  lvl_remaining = lvl;
+  for (int i=0; i<dims.size(); i++) {
+    dims[i][1] = 0;
+    dims[i][2] = 0;
+  }
+
+  for (int i=dims.size()-1; i>=0; i--) {
+    dims[i][1] = min(maxidx(dims[i]), lvl_remaining);
+    lvl_remaining -= curridx(dims[i]);
+
+    if ( lvl_remaining == 0 ) { break; }
   }
 
   for (int i=0; i<dims.size(); i++) {
     dims[i][2] = curridx(dims[i]);
   }
-
-  return dims;
 }
 
 vector< vector<int> > dimrange(vector< vector<int> > dims, int start, int stop) {
@@ -141,7 +91,7 @@ int sum(vector<int> xs) {
 }
 
 vector< vector<int> > diagonal_traverse(vector< vector<int> > dims, int lvl) {
-  int i, j, ndims, headstop, tailstart, new2ndtolast_idx;
+  int i, j, ndims, headstop, tailstart, new2ndtolast_idx, lvl_remaining, lvl_existing;
   vector<int> current_dim, last, sndtolast;
 
   ndims     = dims.size();
@@ -160,20 +110,40 @@ vector< vector<int> > diagonal_traverse(vector< vector<int> > dims, int lvl) {
       current_dim = dims[i];
       if ( curridx(current_dim) < maxidx(current_dim)
            && curridx(current_dim) < lvl
-           && sum(indices(dimrange(dims, 0, i))) < lvl ) {
+           && sum(indices(dimrange(dims, 0, i+1))) < lvl ) {
         dims[i][1] += 1;
 
         i++;
         for (j=i; j<tailstart; j++) {
-          dims[j][1] = startidx(dims[j]);
+          dims[j][1] = 0;
         }
 
         new2ndtolast_idx = lvl - sum(indices(dimrange(dims, 0, headstop+1))) - maxidx(last);
         if (new2ndtolast_idx < 0) {
           new2ndtolast_idx = 0;
+        } else if (new2ndtolast_idx > maxidx(sndtolast)) {
+          lvl_remaining = new2ndtolast_idx - maxidx(sndtolast);
+          new2ndtolast_idx -= lvl_remaining;
+          for (int i=headstop; i>=0; i--) {
+            dims[i][1] = min(maxidx(dims[i]), lvl_remaining);
+            lvl_remaining -= curridx(dims[i]);
+
+            if ( lvl_remaining == 0 ) { break; }
+          }
         }
         dims[tailstart][1]   = new2ndtolast_idx;
         dims[tailstart+1][1] = lvl - sum(indices(dimrange(dims, 0, tailstart+1)));
+
+        lvl_existing = sum(indices(dimrange(dims, 0, ndims)));
+        if ( lvl_existing < lvl ) {
+          lvl_remaining = lvl - lvl_existing;
+          for (int i=dims.size()-1; i>=0; i--) {
+            dims[i][1] = min(maxidx(dims[i]), lvl_remaining);
+            lvl_remaining -= curridx(dims[i]);
+
+            if ( lvl_remaining == 0 ) { break; }
+          }
+        }
 
         break;
       }
@@ -183,72 +153,46 @@ vector< vector<int> > diagonal_traverse(vector< vector<int> > dims, int lvl) {
   return dims;
 }
 
-// void diagonal_traverse(vector<int> list_sizes, int diag) {
-//   vector<int> start_idxs = initialize(list_sizes, diag);
-// 
-//   for (i=start_idxs[0]; i<min(list_sizes[0], diag); i++) {
-//     for (j=start_idxs[1]; j<min(list_sizes[1], diag); j++) {
-//       k = diag - i - j - list_sizes[3] + 1;
-// 
-//       if (k < 0) {
-//         k = 0;
-//       }
-// 
-//       for (l=diag - (i + j + k); l>=0; l--) {
-//         if (k >= list_sizes[2]) {
-//           break;
-//         }
-// 
-//         cout << i << j << k << l << endl;
-//         k++;
-//       }
-//     }
-//   }
-// }
+CombinationGenerator::CombinationGenerator(vector<int> list_sizes) {
+  for ( int size : list_sizes ) {
+    dims.push_back(vector<int> { size, 0, 0 });
+  }
+  lvl = 0;
+  initialize();
+  done = 0;
+}
 
-/**
-void test(vector<int> list_sizes, int diag) {
-  int i, j, k, l;
-  vector<int> start_idxs = initialize(list_sizes, diag);
+CombinationGenerator::~CombinationGenerator() { }
 
-  for (i=start_idxs[0]; i<min(list_sizes[0], diag); i++) {
-    for (j=start_idxs[1]; j<min(list_sizes[1], diag); j++) {
-      k = diag - i - j - list_sizes[3] + 1;
+vector<int> CombinationGenerator::next() {
+  vector<int> result, old_idxs, new_idxs;
 
-      if (k < 0) {
-        k = 0;
-      }
+  result = indices(dims);
 
-      for (l=diag - (i + j + k); l>=0; l--) {
-        if (k >= list_sizes[2]) {
-          break;
-        }
+  old_idxs = indices(dims);
+  dims     = diagonal_traverse(dims, lvl);
+  new_idxs = indices(dims);
+  if ( equal(old_idxs.begin(), old_idxs.end(), new_idxs.begin()) ) {
+    lvl += 1;
 
-        cout << i << j << k << l << endl;
-        k++;
-      }
+    initialize();
+
+    new_idxs = indices(diagonal_traverse(dims, lvl));
+    if ( equal(old_idxs.begin(), old_idxs.end(), new_idxs.begin()) ) {
+      done = 1;
     }
   }
+
+  return result;
 }
-**/
 
-int main() {
-  vector<int> first { 4, 0, 0 };
-  vector<int> secnd { 2, 0, 0 };
-  vector<int> third { 2, 0, 0 };
-  vector<int> forth { 3, 0, 0 };
-  vector< vector<int> > dims;
-  dims.push_back(first);
-  dims.push_back(secnd);
-  dims.push_back(third);
-  dims.push_back(forth);
+vector<int> get_list_sizes(vector< vector<int> > lists) {
+    int i;
+    vector<int> result;
 
-  dims = initialize(dims, 7);
+    for (i=0; i<lists.size(); i++) {
+        result.push_back(lists[i].size());
+    }
 
-  for (int i=0; i<15; i++) {
-    pvector(indices(dims));
-    dims = diagonal_traverse(dims, 7);
-  }
-
-  return 0;
+    return result;
 }

@@ -22,6 +22,10 @@ I have also successfully compiled and run the program on Ubuntu 14.04
 To build the project, run `make` in the project directory. This will
 compile an executable named <b>skycov</b>. Type `./skycov` to run.
 
+The program takes one command line argument, a regular expresion to
+match against files in the Bes2 directory. If no regular expression is
+given, the program will process every file.
+
 The program will read in star field data from star catalogues in Bes2,
 and compute the probabilities of finding guide star/wave front star
 combinations where the positions of the probes are such that there are
@@ -86,12 +90,12 @@ order to do so, pipe the output of the program to a file.
 
     ./skycov > dogrid.results.4probe
 
-Then run the plotting script on the file
+Then run the plotting script on the file, passing in the name of the
+image file to write
 
-    python plotgrid.py dogrid.results.4probe
+    python plotgrid.py dogrid.results.4probe maglim.bare.dgnf.png
 
-The plotting script writes a file called maglim.bare.dgnf.png. The
-result of plotting the above output looks like this:
+The result of plotting looks something like this.
 
 ![maglim.bare.dgnf.png](maglim.bare.dgnf.png)
 

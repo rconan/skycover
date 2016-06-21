@@ -129,23 +129,6 @@ vector<Star> apply_indices(vector< vector<Star> > probestars, vector<int> indice
     return result;
 }
 
-vector<string> dimmer_gdr(string magpair) {
-    vector<string> dimmers;
-    ostringstream pair;
-
-    vector<string> mags = split(magpair, ':');
-    int wfs = stoi(mags[0]);
-    int gdr = stoi(mags[1]);
-
-    for (int i=gdr+1; i<=19; i++) {
-        pair << wfs << ":" << i;
-        dimmers.push_back(pair.str());
-        pair.str(std::string());
-    }
-
-    return dimmers;
-}
-
 string get_wfs(string magpair) {
     vector<string> mags = split(magpair, ':');
     return mags[0];
@@ -156,7 +139,7 @@ string get_gdr(string magpair) {
     return mags[1];
 }
 
-vector<string> dimmer_wfs(string magpair) {
+vector<string> dimmer_pairs(string magpair) {
     vector<string> dimmers;
     ostringstream pair;
 
@@ -164,10 +147,12 @@ vector<string> dimmer_wfs(string magpair) {
     int wfs = stoi(mags[0]);
     int gdr = stoi(mags[1]);
 
-    for (int i=wfs+1; i<=19; i++) {
-        pair << i << ":" << gdr;
+    for (int i=wfs; i<=19; i++) {
+      for (int j=gdr; j<=19; j++) {
+        pair << i << ":" << j;
         dimmers.push_back(pair.str());
         pair.str(std::string());
+      }
     }
 
     return dimmers;
@@ -182,15 +167,18 @@ map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe
     CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
 
     int count = 1;
+    int current_lvl = stargroups.lvl;
     while (! stargroups.done) {
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
+
       if ( current_group.valid() ) {
         if ( ! has_collisions(current_group, probes) ) {
           current_pair = current_group.magpair();
           valid_mags_map[current_pair] = true;
 
-          for ( string dimmer_pair : dimmer_wfs(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
-          for ( string dimmer_pair : dimmer_gdr(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
+          for ( string dimmer_pair : dimmer_pairs(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
+
+          break;
         }
       }
     }
@@ -224,7 +212,7 @@ map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> prob
     return get_valid_mags(get_probe_stars(stars, probes), probes);
 }
 
-vector<string> files_in_dir(string dirname, char *regexp) {
+vector<string> files_in_dir(string dirname, string regexp) {
   ostringstream path;
   vector<string> filenames;
   DIR *pDIR;
@@ -289,10 +277,17 @@ int main(int argc, char *argv[]) {
 
     int count = 0;
 
-    vector<string> starfield_files = files_in_dir("Bes2/", argv[1]);
+    string file_regex;
+    if (argc < 2) {
+      file_regex = ".*";
+    } else {
+      file_regex = argv[1];
+    }
+
+    vector<string> starfield_files = files_in_dir("Bes2/", file_regex);
     vector<string>::iterator curr_path;
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
-        cerr << "Processing file " << *curr_path << endl;
+      // cerr << "Processing file " << *curr_path << endl;
         stars = load_stars(*curr_path);
         CurrentFileValidMagnitudes = valid_mags_in_starfield(stars, probes);
 

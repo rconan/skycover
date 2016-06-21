@@ -3,10 +3,8 @@ import sys
 import starbase
 from numpy import *
 
-if len(sys.argv) < 2:
-    print "Please pass a filename to this script"
-    print
-    print "example:\npython plotgrid.py dogrid.results.4probe"
+if len(sys.argv) < 3:
+    print "example:\npython plotgrid.py <probability file> <png output file>"
     sys.exit(0)
 
 tab = starbase.Starbase(sys.argv[1])
@@ -72,4 +70,4 @@ for i,config in enumerate(configs):
     CS=ax.contour(X,Y,zlist[i],levels[config])
     ax.clabel(CS, inline=1, fontsize=10)
 
-    fig.savefig('maglim.bare.'+config+'.png')
+    fig.savefig(sys.argv[2])
