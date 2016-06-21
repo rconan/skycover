@@ -24,6 +24,15 @@ void pvector(vector<int> v) {
   cout << endl;
 }
 
+void pdimvector(vector< vector<int> > dims) {
+  for ( vector<int> dim : dims ) {
+    cout << "{";
+    pvector(dim);
+    cout << "} ";
+  }
+  cout << endl;
+}
+
 vector<int> vrange(int start, int end) {
   vector<int> result;
   for (int i=start; i<end; i++) {
@@ -88,19 +97,116 @@ vector<int> get_list_sizes(vector< vector<int> > lists) {
     return result;
 }
 
-vector<int> initialize(vector<int> list_sizes, int diag) {
-  vector<int> indices = zeros(list_sizes.size());
-  
-  for (int i=list_sizes.size()-1; i>=0; i--) {
-    indices[i] = min(list_sizes[i]-1, diag);
-    diag -= indices[i];
+int maxidx(vector<int> dim)   { return dim[0]; }
+int curridx(vector<int> dim)  { return dim[1]; }
+int startidx(vector<int> dim) { return dim[2]; }
 
-    if (diag == 0) { break; }
+vector< vector<int> > initialize(vector< vector<int> > dims, int lvl) {
+  for (int i=dims.size()-1; i>=0; i--) {
+    dims[i][1] = min(maxidx(dims[i]), lvl);
+    lvl -= curridx(dims[i]);
+
+    if ( lvl == 0 ) { break; }
   }
 
-  return indices;
+  for (int i=0; i<dims.size(); i++) {
+    dims[i][2] = curridx(dims[i]);
+  }
+
+  return dims;
 }
 
+vector< vector<int> > dimrange(vector< vector<int> > dims, int start, int stop) {
+  vector< vector<int> > result;
+  for (int i=start; i<stop; i++) {
+    result.push_back(dims[i]);
+  }
+  return result;
+}
+
+vector<int> indices(vector< vector<int> > dims) {
+  vector<int> result;
+  for ( vector<int> dim : dims ) {
+    result.push_back(curridx(dim));
+  }
+  return result;
+}
+
+int sum(vector<int> xs) {
+  int res = 0;
+  for ( int x : xs ) {
+    res += x;
+  }
+  return res;
+}
+
+vector< vector<int> > diagonal_traverse(vector< vector<int> > dims, int lvl) {
+  int i, j, ndims, headstop, tailstart, new2ndtolast_idx;
+  vector<int> current_dim, last, sndtolast;
+
+  ndims     = dims.size();
+  headstop  = ndims - 3;
+  tailstart = ndims - 2;
+
+  last      = dims[ndims-1];
+  sndtolast = dims[ndims-2];
+  if ( curridx(last) > 0
+       && curridx(sndtolast) < maxidx(sndtolast)
+       && curridx(sndtolast) < lvl ) {
+    dims[ndims-1][1] -= 1;
+    dims[ndims-2][1] += 1;
+  } else {
+    for (i=headstop; i>=0; i--) {
+      current_dim = dims[i];
+      if ( curridx(current_dim) < maxidx(current_dim)
+           && curridx(current_dim) < lvl
+           && sum(indices(dimrange(dims, 0, i))) < lvl ) {
+        dims[i][1] += 1;
+
+        i++;
+        for (j=i; j<tailstart; j++) {
+          dims[j][1] = startidx(dims[j]);
+        }
+
+        new2ndtolast_idx = lvl - sum(indices(dimrange(dims, 0, headstop+1))) - maxidx(last);
+        if (new2ndtolast_idx < 0) {
+          new2ndtolast_idx = 0;
+        }
+        dims[tailstart][1]   = new2ndtolast_idx;
+        dims[tailstart+1][1] = lvl - sum(indices(dimrange(dims, 0, tailstart+1)));
+
+        break;
+      }
+    }
+  }
+
+  return dims;
+}
+
+// void diagonal_traverse(vector<int> list_sizes, int diag) {
+//   vector<int> start_idxs = initialize(list_sizes, diag);
+// 
+//   for (i=start_idxs[0]; i<min(list_sizes[0], diag); i++) {
+//     for (j=start_idxs[1]; j<min(list_sizes[1], diag); j++) {
+//       k = diag - i - j - list_sizes[3] + 1;
+// 
+//       if (k < 0) {
+//         k = 0;
+//       }
+// 
+//       for (l=diag - (i + j + k); l>=0; l--) {
+//         if (k >= list_sizes[2]) {
+//           break;
+//         }
+// 
+//         cout << i << j << k << l << endl;
+//         k++;
+//       }
+//     }
+//   }
+// }
+
+/**
 void test(vector<int> list_sizes, int diag) {
   int i, j, k, l;
   vector<int> start_idxs = initialize(list_sizes, diag);
@@ -124,26 +230,25 @@ void test(vector<int> list_sizes, int diag) {
     }
   }
 }
+**/
 
 int main() {
-  vector<int> first = vrange(0, 4);
-  vector<int> secnd = vrange(0, 8);
-  vector<int> third = vrange(0, 3);
-  vector<int> forth = vrange(0, 4);
-  vector< vector<int> > lists;
-  lists.push_back(first);
-  lists.push_back(secnd);
-  lists.push_back(third);
-  lists.push_back(forth);
+  vector<int> first { 4, 0, 0 };
+  vector<int> secnd { 2, 0, 0 };
+  vector<int> third { 2, 0, 0 };
+  vector<int> forth { 3, 0, 0 };
+  vector< vector<int> > dims;
+  dims.push_back(first);
+  dims.push_back(secnd);
+  dims.push_back(third);
+  dims.push_back(forth);
 
-  pvector(first);
-  pvector(secnd);
-  pvector(third);
-  pvector(forth);
+  dims = initialize(dims, 7);
 
-  cout << endl;
-
-  test(get_list_sizes(lists), 9);
+  for (int i=0; i<15; i++) {
+    pvector(indices(dims));
+    dims = diagonal_traverse(dims, 7);
+  }
 
   return 0;
 }
