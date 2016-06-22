@@ -139,6 +139,40 @@ string get_gdr(string magpair) {
     return mags[1];
 }
 
+vector<string> dimmer_wfs(string magpair) {
+    vector<string> dimmers;
+    ostringstream pair;
+
+    vector<string> mags = split(magpair, ':');
+    int wfs = stoi(mags[0]);
+    int gdr = stoi(mags[1]);
+
+    for (int i=wfs+1; i<=19; i++) {
+        pair << i << ":" << gdr;
+        dimmers.push_back(pair.str());
+        pair.str(std::string());
+    }
+
+    return dimmers;
+}
+
+vector<string> dimmer_gdr(string magpair) {
+    vector<string> dimmers;
+    ostringstream pair;
+
+    vector<string> mags = split(magpair, ':');
+    int wfs = stoi(mags[0]);
+    int gdr = stoi(mags[1]);
+
+    for (int i=gdr+1; i<=19; i++) {
+        pair << wfs << ":" << i;
+        dimmers.push_back(pair.str());
+        pair.str(std::string());
+    }
+
+    return dimmers;
+}
+
 vector<string> dimmer_pairs(string magpair) {
     vector<string> dimmers;
     ostringstream pair;
@@ -167,7 +201,6 @@ map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe
     CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
 
     int count = 1;
-    int current_lvl = stargroups.lvl;
     while (! stargroups.done) {
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
@@ -177,8 +210,6 @@ map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe
           valid_mags_map[current_pair] = true;
 
           for ( string dimmer_pair : dimmer_pairs(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
-
-          break;
         }
       }
     }
@@ -208,8 +239,38 @@ vector<Star> load_stars(string filename) {
     return stars;
 }
 
+vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int bin) {
+  vector< vector<Star> > result;
+  vector<Star> probeX_stars;
+  
+  for ( vector<Star> stars : probestars ) {
+    probeX_stars.clear();
+    for ( Star s : stars ) {
+      if (s.r <= bin) {
+        probeX_stars.push_back(s);
+      }
+    }
+    result.push_back(probeX_stars);
+  }
+
+  return result;
+}
+
 map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> probes) {
-    return get_valid_mags(get_probe_stars(stars, probes), probes);
+  vector< vector<Star> > probestars, current_bin;
+  map<string, bool> result;
+
+  probestars = get_probe_stars(stars, probes);
+  for (int bin=13; bin<=19; bin++) {
+    current_bin = probestars_in_bin(probestars, bin);
+    result = get_valid_mags(current_bin, probes);
+
+    if ( !result.empty() ) {
+      break;
+    }
+  }
+
+  return result;
 }
 
 vector<string> files_in_dir(string dirname, string regexp) {
@@ -250,11 +311,6 @@ void dogrid_file(map<string, int> ValidMags, double nfiles) {
 }
 
 int main(int argc, char *argv[]) {
-    Point probe1_ctr(0.25, 0);
-    Point probe2_ctr(0, 0.25);
-    Point probe3_ctr(-0.25, 0);
-    Point probe4_ctr(0, -0.25);
-
     double range_width = 0.4;
 
     Probe probe1(27, 94.5, 72);
@@ -287,20 +343,24 @@ int main(int argc, char *argv[]) {
     vector<string> starfield_files = files_in_dir("Bes2/", file_regex);
     vector<string>::iterator curr_path;
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
-      // cerr << "Processing file " << *curr_path << endl;
-        stars = load_stars(*curr_path);
-        CurrentFileValidMagnitudes = valid_mags_in_starfield(stars, probes);
+      cerr << "Processing file " << *curr_path << endl;
+      stars = load_stars(*curr_path);
+      CurrentFileValidMagnitudes = valid_mags_in_starfield(stars, probes);
 
-        for (auto const entry : CurrentFileValidMagnitudes) {
-            if (ValidMagnitudes.count(entry.first) == 0) {
-                ValidMagnitudes[entry.first] = 1;
-            } else {
-                ValidMagnitudes[entry.first]++;
-            }
+      for (auto const entry : CurrentFileValidMagnitudes) {
+        if (ValidMagnitudes.count(entry.first) == 0) {
+          ValidMagnitudes[entry.first] = 1;
+        } else {
+          ValidMagnitudes[entry.first]++;
         }
+      }
 
-        count++;
+      count++;
     }
+    
+    // for ( auto const entry : ValidMagnitudes ) {
+    //   cout << entry.first << ": " << entry.second << endl;
+    // }
     
     dogrid_file(ValidMagnitudes, count);
 

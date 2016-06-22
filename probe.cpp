@@ -21,8 +21,8 @@ Probe::Probe(double near_edge_angle_deg, double far_edge_angle_deg, double axis_
 
   add_pt(origin_vector.rotate(near_edge_angle_deg * (PI / 180)));
   add_pt(origin_vector.rotate(far_edge_angle_deg  * (PI / 180)));
-  add_pt(scale(polygon.points[1], .3));
-  add_pt(scale(polygon.points[0], .3));
+  add_pt(scale(polygon.points[1], .1));
+  add_pt(scale(polygon.points[0], .1));
 
   axis = origin_vector.rotate(axis_angle * (PI / 180));
 
@@ -144,6 +144,6 @@ void Probe::probe_coverage() {
   coverable_area.add_pt(axis.rotate(-90 * (PI / 180)));
   coverable_area.add_pt(axis);
   coverable_area.add_pt(axis.rotate(90  * (PI / 180)));
-  coverable_area.add_pt(scale(coverable_area.points[0], 0.3));
-  coverable_area.add_pt(scale(coverable_area.points[2], 0.3));
+  coverable_area.add_pt(scale(coverable_area.points[0], 0.1));
+  coverable_area.add_pt(scale(coverable_area.points[2], 0.1));
 }
