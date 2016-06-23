@@ -68,13 +68,20 @@ string StarGroup::magpair() {
     return res.str();
 }
 
-int StarGroup::valid() {
-  for (vector<int>::iterator it = mags.begin(); it != mags.end(); ++it) {
-    if (int_frequency(*it, mags) >= 3) {
-      return 1;
-    }
+int StarGroup::valid(int W, int G) {
+  double R_1 = stars[0].r;
+  double R_2 = stars[1].r;
+  double R_3 = stars[2].r;
+  double R_4 = stars[3].r;
+
+  if ( ((R_1 > G) || (R_2 > W) || (R_3 > W) || (R_4 > W))
+       && ((R_1 > W) || (R_2 > G) || (R_3 > W) || (R_4 > W))
+       && ((R_1 > W) || (R_2 > W) || (R_3 > G) || (R_4 > W))
+       && ((R_1 > W) || (R_2 > W) || (R_3 > W) || (R_4 > G)) ) {
+    return 0;
   }
-  return 0;
+
+  return 1;
 }
 
 void StarGroup::print() {

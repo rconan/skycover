@@ -8,7 +8,7 @@ class Star {
 
  public:
   Point  pt;
-  int    r;
+  double r;
   double x;
   double y;
 

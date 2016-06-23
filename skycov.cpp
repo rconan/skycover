@@ -192,7 +192,7 @@ vector<string> dimmer_pairs(string magpair) {
     return dimmers;
 }
 
-map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe> probes) {
+bool is_valid_pair(vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag) {
     int i;
     string current_pair;
     StarGroup current_group;
@@ -200,21 +200,17 @@ map<string, bool> get_valid_mags(vector< vector<Star> > probestars, vector<Probe
 
     CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
 
-    int count = 1;
     while (! stargroups.done) {
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
-      if ( current_group.valid() ) {
+      if ( current_group.valid(wfsmag, gdrmag) ) {
         if ( ! has_collisions(current_group, probes) ) {
-          current_pair = current_group.magpair();
-          valid_mags_map[current_pair] = true;
-
-          for ( string dimmer_pair : dimmer_pairs(current_pair) ) { valid_mags_map[dimmer_pair] = true; }
+          return true;
         }
       }
     }
 
-    return valid_mags_map;
+    return false;
 }
 
 vector<Star> load_stars(string filename) {
@@ -257,17 +253,29 @@ vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int 
 }
 
 map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> probes) {
+  int bin;
+  ostringstream currentpairstream;
+  string currentpair;
   vector< vector<Star> > probestars, current_bin;
   map<string, bool> result;
 
   probestars = get_probe_stars(stars, probes);
-  for (int bin=13; bin<=19; bin++) {
-    current_bin = probestars_in_bin(probestars, bin);
-    result = get_valid_mags(current_bin, probes);
 
-    if ( !result.empty() ) {
-      break;
-    }
+  for (int wfsmag=13; wfsmag<=19; wfsmag++) {
+    for (int gdrmag=13; gdrmag<=19; gdrmag++) {
+      currentpairstream.str(std::string());
+      bin = max(wfsmag, gdrmag);
+      currentpairstream << wfsmag << ":" << gdrmag;
+      currentpair = currentpairstream.str();
+
+      if ( result[currentpair] == true ) { continue; }
+
+      result[currentpair] = is_valid_pair(probestars_in_bin(probestars, bin), probes, wfsmag, gdrmag);
+
+      if ( result[currentpair] == true ) {
+        for ( string dimmerpair : dimmer_pairs(currentpair) ) { result[dimmerpair] = true; }
+      }
+   }
   }
 
   return result;
@@ -340,7 +348,7 @@ int main(int argc, char *argv[]) {
       file_regex = argv[1];
     }
 
-    vector<string> starfield_files = files_in_dir("Bes2/", file_regex);
+    vector<string> starfield_files = files_in_dir("Bes/", file_regex);
     vector<string>::iterator curr_path;
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
       cerr << "Processing file " << *curr_path << endl;
@@ -348,10 +356,12 @@ int main(int argc, char *argv[]) {
       CurrentFileValidMagnitudes = valid_mags_in_starfield(stars, probes);
 
       for (auto const entry : CurrentFileValidMagnitudes) {
-        if (ValidMagnitudes.count(entry.first) == 0) {
-          ValidMagnitudes[entry.first] = 1;
-        } else {
-          ValidMagnitudes[entry.first]++;
+        if ( entry.second == true ) {
+          if (ValidMagnitudes.count(entry.first) == 0) {
+            ValidMagnitudes[entry.first] = 1;
+          } else {
+            ValidMagnitudes[entry.first]++;
+          }
         }
       }
 

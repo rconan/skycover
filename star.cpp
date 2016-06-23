@@ -10,7 +10,7 @@ Star::Star(double _x, double _y, double _r) {
   pt = Point(_x, _y);
   x  = pt.x;
   y  = pt.y;
-  r  = (int) ceil(_r);
+  r  = _r;
 }
 
 Star::~Star() { }
@@ -29,6 +29,6 @@ Point Star::point() {
 }
 
 void Star::print() {
-  printf("x: %f, y: %f, r: %d\n", pt.x, pt.y, r);
+  printf("x: %f, y: %f, r: %f\n", pt.x, pt.y, r);
 }
 
