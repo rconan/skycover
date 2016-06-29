@@ -3,6 +3,7 @@
 
 
 #include <vector>
+#include <string>
 #include "point.h"
 #include "polygon.h"
 #include "star.h"
@@ -12,9 +13,10 @@ class Probe {
 
  public:
   Probe();
-  Probe(double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle);
+  Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle);
   ~Probe();
 
+  string name;
   Point center;
   Point rotate_about;
   double radius;
@@ -35,5 +37,7 @@ class Probe {
 };
 
 double distance(Point a, Point b);
+double angle_between_vectors(Point a, Point b);
+int quadrant(Point p);
 
 #endif

@@ -56,13 +56,18 @@ bool safe_distance_from_center(Star star) {
 }
 
 vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
-  Point star_pt;
   vector<Star> result;
   int i;
 
   for (i=0; i<stars.size(); i++) {
-    star_pt = Point(stars[i].x, stars[i].y);
-    if (safe_distance_from_center(stars[i]) && (probe.can_cover(stars[i]))) {
+    // if (probe.name.compare("probe4") == 0) {
+    //   cout << probe.name << " ";
+    //   cout << stars[i].x << ", " << stars[i].y << " ";
+    //   cout << "safe_distance: " << safe_distance_from_center(stars[i]) << " ";
+    //   cout << "can_cover: " << probe.coverable_area.point_in_poly(stars[i].point()) << endl;
+    // }
+
+    if (safe_distance_from_center(stars[i]) && probe.can_cover(stars[i])) {
       result.push_back(stars[i]);
     }
   }
@@ -192,7 +197,7 @@ vector<string> dimmer_pairs(string magpair) {
     return dimmers;
 }
 
-bool is_valid_pair(vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag) {
+bool is_valid_pair(vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag, int printflg) {
     int i;
     string current_pair;
     StarGroup current_group;
@@ -204,7 +209,12 @@ bool is_valid_pair(vector< vector<Star> > probestars, vector<Probe> probes, doub
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
       if ( current_group.valid(wfsmag, gdrmag) ) {
+        // if (printflg) { transform_and_print(current_group, probes); }
         if ( ! has_collisions(current_group, probes) ) {
+          // transform_and_print(current_group, probes);
+          // for (Star s : current_group.stars) {
+          //   cout << s.x << " " << s.y << " " << s.r << endl;
+          // }
           return true;
         }
       }
@@ -238,7 +248,7 @@ vector<Star> load_stars(string filename) {
 vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int bin) {
   vector< vector<Star> > result;
   vector<Star> probeX_stars;
-  
+
   for ( vector<Star> stars : probestars ) {
     probeX_stars.clear();
     for ( Star s : stars ) {
@@ -265,17 +275,34 @@ map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> prob
     for (int gdrmag=13; gdrmag<=19; gdrmag++) {
       currentpairstream.str(std::string());
       bin = max(wfsmag, gdrmag);
+
       currentpairstream << wfsmag << ":" << gdrmag;
       currentpair = currentpairstream.str();
 
-      if ( result[currentpair] == true ) { continue; }
+      current_bin = probestars_in_bin(probestars, bin);
 
-      result[currentpair] = is_valid_pair(probestars_in_bin(probestars, bin), probes, wfsmag, gdrmag);
+      // for ( Star s : current_bin[3] ) {
+      //   cout << s.x << " " << s.y << " " << s.r << endl;
+      // }
+
+      // if (wfsmag == 13 && gdrmag == 14) {
+      //   cout << "bins at 13 14: " << bin << endl;
+      //   for (int k=0; k<4; k++) {
+      //     cout << "current_bin[" << k << "]" << endl;
+      //     for (Star s : current_bin[k]) {
+      //       cout << s.x << " " << s.y << endl;
+      //     }
+      //   }
+      // }
+
+      if (result[currentpair] == true) { continue; }
+
+      // result[currentpair] = is_valid_pair(current_bin, probes, wfsmag, gdrmag);
 
       if ( result[currentpair] == true ) {
         for ( string dimmerpair : dimmer_pairs(currentpair) ) { result[dimmerpair] = true; }
       }
-   }
+    }
   }
 
   return result;
@@ -321,10 +348,10 @@ void dogrid_file(map<string, int> ValidMags, double nfiles) {
 int main(int argc, char *argv[]) {
     double range_width = 0.4;
 
-    Probe probe1(27, 94.5, 72);
-    Probe probe2(121.5, 166.5, 144);
-    Probe probe3(-27, -94.5, -72);
-    Probe probe4(-121.5, -166.5, -144);
+    Probe probe1("probe1", -26.5, -94.5, -72);
+    Probe probe2("probe2", -121.5, -166.5, -144);
+    Probe probe3("probe3", 121.5, 166.5, 144);
+    Probe probe4("probe4", 26.5, 94.5, 72);
 
     Point origin(0, 0);
 
@@ -340,16 +367,51 @@ int main(int argc, char *argv[]) {
     map<string, bool> CurrentFileValidMagnitudes;
 
     int count = 0;
+    int wfsmag, gdrmag, nfiles;
 
     string file_regex;
     if (argc < 2) {
       file_regex = ".*";
+    } else if (argc == 4) {
+      wfsmag = atoi(argv[1]);
+      gdrmag = atoi(argv[2]);
+      nfiles = atoi(argv[3]);
     } else {
       file_regex = argv[1];
     }
 
-    vector<string> starfield_files = files_in_dir("Bes/", file_regex);
+    vector<string> starfield_files = files_in_dir("Bes/", ".*");
     vector<string>::iterator curr_path;
+
+    bool valid_file;
+    vector< vector<Star> > probestars, current_bin;
+
+    int printflg = 0;
+    double valid_files = 0;
+    for (int i=0; i<nfiles; i++) {
+      // cerr << "Processing file " << starfield_files[i] << endl;
+      stars = load_stars(starfield_files[i]);
+
+      probestars  = get_probe_stars(stars, probes);
+      current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
+
+      // for (int k=0; k<4; k++) {
+      //   cout << "current_bin[" << k << "]" << endl;
+      //   for (Star s : current_bin[k]) {
+      //     cout << s.x << " " << s.y << endl;
+      //   }
+      // }
+      // cout << endl;
+
+      if (i == 19) { printflg = 1; }
+
+      if (is_valid_pair(current_bin, probes, wfsmag, gdrmag, printflg)) { valid_files++; }
+      printflg = 0;
+    }
+
+    cerr << valid_files / nfiles << endl;
+
+    /**
     for (curr_path=starfield_files.begin(); curr_path!=starfield_files.end(); curr_path++) {
       cerr << "Processing file " << *curr_path << endl;
       stars = load_stars(*curr_path);
@@ -367,12 +429,14 @@ int main(int argc, char *argv[]) {
 
       count++;
     }
-    
+    **/
+
+
     // for ( auto const entry : ValidMagnitudes ) {
     //   cout << entry.first << ": " << entry.second << endl;
     // }
     
-    dogrid_file(ValidMagnitudes, count);
+    // dogrid_file(ValidMagnitudes, count);
 
     return 0;
 }

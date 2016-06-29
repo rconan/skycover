@@ -93,6 +93,12 @@ int colliding(Polygon poly1, Polygon poly2) {
   return res;
 }
 
+void transform_and_print(StarGroup group, vector<Probe> probes) {
+  for (int i=0; i<group.stars.size(); i++) {
+    probes[i].transform(group.stars[i].point()).polyprint();
+  }
+}
+
 int has_collisions(StarGroup group, vector<Probe> probes) {
   vector<Polygon> polygons;
   Probe prb;
@@ -103,9 +109,12 @@ int has_collisions(StarGroup group, vector<Probe> probes) {
     prb  = probes[i];
     star = group.stars[i];
     polygons.push_back(prb.transform(star.point()));
-    // polygons[i].polyprint();
+    // polygons[i].polyrint();
   }
 
+  if (colliding(polygons[0], polygons[polygons.size()-1])) {
+    return 1;
+  }
   for (i=0; i<polygons.size()-1; i++) {
     if (colliding(polygons[i], polygons[i+1])) {
       return 1;

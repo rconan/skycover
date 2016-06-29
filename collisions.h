@@ -5,3 +5,4 @@ int intersecting(Point u, Point v);
 vector<Point> SAT_axes(Polygon poly);
 int colliding(Polygon poly1, Polygon poly2);
 int has_collisions(StarGroup group, vector<Probe> probes);
+void transform_and_print(StarGroup group, vector<Probe> probes);

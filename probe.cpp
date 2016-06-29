@@ -2,6 +2,7 @@
 #include "polygon.h"
 #include <vector>
 #include <math.h>
+#include <cmath>
 #include <iostream>
 using namespace std;
 
@@ -16,13 +17,14 @@ Point scale(Point v, double m) {
 
 Probe::Probe() { }
 
-Probe::Probe(double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle) {
+Probe::Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle) {
+  name = _name;
   Point origin_vector(0, 1);
 
   add_pt(origin_vector.rotate(near_edge_angle_deg * (PI / 180)));
   add_pt(origin_vector.rotate(far_edge_angle_deg  * (PI / 180)));
-  add_pt(scale(polygon.points[1], .1));
-  add_pt(scale(polygon.points[0], .1));
+  add_pt(scale(polygon.points[1], .4));
+  add_pt(scale(polygon.points[0], .4));
 
   axis = origin_vector.rotate(axis_angle * (PI / 180));
 
@@ -89,10 +91,57 @@ double distance(Point a, Point b) {
   return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
 }
 
+int quadrant(Point pt) {
+  if (pt.x >= 0 && pt.y >= 0) { return 1; }
+  if (pt.x <= 0 && pt.y >= 0) { return 2; }
+  if (pt.x <= 0 && pt.y <= 0) { return 3; }
+  return 4;
+}
+
 // Angle between probe's axis and the point represented as a vector
 // from the origin.
 double Probe::angle_to_point(Point pt) {
-  return angle_between_vectors(axis, pt);
+  Point origin(0, 1);
+  int mod = 1;
+
+  double axis_angle, pt_angle;
+  axis_angle = angle_between_vectors(origin, axis);
+  pt_angle   = angle_between_vectors(origin, pt);
+
+  // cout << "axis_angle: " << axis_angle << ", pt_angle: " << pt_angle << endl;
+
+  int pt_quadrant   = quadrant(pt);
+  int axis_quadrant = quadrant(axis);
+
+  // cout << "axis_quadrant: " << axis_quadrant << ", pt_quadrant: " << pt_quadrant << ", ";
+
+  if (axis_quadrant == 1) {
+    if (pt_quadrant == 1 && axis_angle < pt_angle) {
+      mod = -1;
+    } else if (pt_quadrant == 4) {
+      mod = -1;
+    }
+  } else if (axis_quadrant == 2) {
+    if (pt_quadrant == 2 && axis_angle > pt_angle) {
+      mod = -1;
+    } else if (pt_quadrant == 1) {
+      mod = -1;
+    }
+  } else if (axis_quadrant == 3) {
+    if (pt_quadrant == 3 && axis_angle > pt_angle) {
+      mod = -1;
+    } else if (pt_quadrant == 2) {
+      mod = -1;
+    }
+  } else if (axis_quadrant == 4) {
+    if (pt_quadrant == 4 && axis_angle < pt_angle) {
+      mod = -1;
+    } else if (pt_quadrant == 3) {
+      mod = -1;
+    }
+  }
+  
+  return angle_between_vectors(pt, axis) * mod;
 }
 
 /**
@@ -124,8 +173,9 @@ double Probe::solve_theta_offset(Point pt) {
 **/
 
 Polygon Probe::transform(Point pivot) {
-  Point origin = Point(0, 0);
   double theta = angle_to_point(pivot);
+  // cout << "axis: (" << axis.x << ", " << axis.y << "), pt: (" << pivot.x << ", " << pivot.y << ")" << endl;
+  // cout << "rotating " << name << " " << theta << " radians" << endl;
 
   Polygon translated_poly = translate_poly(this->polygon, this->center, this->rotate_about);
   Polygon rotated_poly    = rotate_poly(translated_poly, theta);
@@ -135,7 +185,8 @@ Polygon Probe::transform(Point pivot) {
 }
 
 bool Probe::can_cover(Star s) {
-  return coverable_area.point_in_poly(s.point());
+  // true if angle between axis and point is < 90 deg.
+  return abs(angle_to_point(s.point())) <= 1.57079632679;
 }
 
 void Probe::probe_coverage() {
@@ -144,6 +195,6 @@ void Probe::probe_coverage() {
   coverable_area.add_pt(axis.rotate(-90 * (PI / 180)));
   coverable_area.add_pt(axis);
   coverable_area.add_pt(axis.rotate(90  * (PI / 180)));
-  coverable_area.add_pt(scale(coverable_area.points[0], 0.1));
-  coverable_area.add_pt(scale(coverable_area.points[2], 0.1));
+  coverable_area.add_pt(scale(coverable_area.points[0], 0.4));
+  coverable_area.add_pt(scale(coverable_area.points[2], 0.4));
 }

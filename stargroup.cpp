@@ -1,4 +1,5 @@
 #include "stargroup.h"
+#include "probe.h"
 #include <iostream>
 #include <sstream>
 using namespace std;
@@ -69,6 +70,66 @@ string StarGroup::magpair() {
 }
 
 int StarGroup::valid(int W, int G) {
+  vector<double> angles;
+  Point origin(0, 1);
+  double angle;
+
+  for (Star s : stars) {
+    angles.push_back(angle_between_vectors(origin, s.point()));
+    // cout << angles[angles.size()-1] << " ";
+  }
+  // cout << endl;
+
+  if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 1) {
+    if (angles[0] < angles[3]) { return 0; }
+  }
+  if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 2) {
+    if (angles[0] > angles[3]) { return 0; }
+  }
+  if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 1) {
+    return 0;
+  }
+
+  if (quadrant(stars[0].point()) == 1 && quadrant(stars[1].point()) == 1) {
+    if (angles[0] > angles[1]) { return 0; }
+  }
+  if (quadrant(stars[0].point()) == 4 && quadrant(stars[1].point()) == 4) {
+    if (angles[0] > angles[1]) { return 0; }
+  }
+  if (quadrant(stars[0].point()) == 4 && quadrant(stars[1].point()) == 1) {
+    return 0;
+  }
+
+  if (quadrant(stars[1].point()) == 4 && quadrant(stars[2].point()) == 4) {
+    if (angles[1] > angles[2]) { return 0; }
+  }
+  if (quadrant(stars[1].point()) == 3 && quadrant(stars[2].point()) == 3) {
+    if (angles[2] > angles[1]) { return 0; }
+  }
+  if (quadrant(stars[1].point()) == 3 && quadrant(stars[2].point()) == 4) {
+    return 0;
+  }
+
+  if (quadrant(stars[2].point()) == 3 && quadrant(stars[3].point()) == 3) {
+    if (angles[3] > angles[2]) { return 0; }
+  }
+  if (quadrant(stars[2].point()) == 2 && quadrant(stars[3].point()) == 2) {
+    if (angles[3] > angles[2]) { return 0; }
+  }
+  if (quadrant(stars[2].point()) == 2 && quadrant(stars[3].point()) == 3) {
+    return 0;
+  }
+
+  for (int i=0; i<stars.size(); i++) {
+    for (int j=0; j<stars.size(); j++) {
+      if (i == j) { continue; }
+
+      if (stars[i].x == stars[j].x && stars[i].y == stars[j].y) {
+        return 0;
+      }
+    }
+  }
+  
   double R_1 = stars[0].r;
   double R_2 = stars[1].r;
   double R_3 = stars[2].r;
