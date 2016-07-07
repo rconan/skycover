@@ -55,7 +55,7 @@ bool safe_distance_from_center(Star star) {
   }
 }
 
-vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
+vector<Star> in_probe_range(vector<Star> stars, Probe probe, double probe_angle) {
   vector<Star> result;
   int i;
 
@@ -68,6 +68,8 @@ vector<Star> in_probe_range(vector<Star> stars, Probe probe) {
     // }
 
     if (safe_distance_from_center(stars[i]) && probe.can_cover(stars[i])) {
+      stars[i].cablemax = (probe_angle + 90 + stars[i].bear) / 2;
+      stars[i].cablemin = min(probe_angle, stars[i].bear);
       result.push_back(stars[i]);
     }
   }
@@ -112,8 +114,10 @@ vector< vector<Star> > get_probe_stars(vector<Star> stars, vector<Probe> probes)
     int i;
     vector< vector<Star> > result;
 
+    vector<double> probe = { 72, 144, -144, -72 };
+
     for (i=0; i<probes.size(); i++) {
-        result.push_back(in_probe_range(stars, probes[i]));
+      result.push_back(in_probe_range(stars, probes[i], probe[i]));
     }
 
     for (i=0; i<result.size(); i++) {
@@ -208,9 +212,10 @@ bool is_valid_pair(vector< vector<Star> > probestars, vector<Probe> probes, doub
     while (! stargroups.done) {
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
-      if ( current_group.valid(wfsmag, gdrmag) ) {
+      if ( current_group.valid(wfsmag, gdrmag, 0) ) {
         // if (printflg) { transform_and_print(current_group, probes); }
         if ( ! has_collisions(current_group, probes) ) {
+          // if (printflg) { transform_and_print(current_group, probes); }
           // transform_and_print(current_group, probes);
           // for (Star s : current_group.stars) {
           //   cout << s.x << " " << s.y << " " << s.r << endl;
@@ -236,8 +241,20 @@ vector<Star> load_stars(string filename) {
             double x = stod(tokens[0]);
             double y = stod(tokens[1]);
             double r = stod(tokens[18]);
+            double bear = stod(tokens[3]);
 
-            stars.push_back(Star(x, y, r));
+            smatch match;
+            regex bear_regex("([0-9]+):([0-9]+):([0-9]+)");
+            if (regex_match(tokens[3], match, bear_regex)) {
+              // cout << "translating " << tokens[3] << " into ";
+              int degrees = stoi(match.str(1));
+              int minutes = stoi(match.str(2));
+              double seconds = stod(match.str(3));
+              bear = degrees + ( (minutes + (seconds / 60)) / 60);
+              cout << bear << endl;
+            }
+
+            stars.push_back(Star(x, y, r, bear));
         }
         current_line++;
     }
@@ -346,12 +363,10 @@ void dogrid_file(map<string, int> ValidMags, double nfiles) {
 }
 
 int main(int argc, char *argv[]) {
-    double range_width = 0.4;
-
-    Probe probe1("probe1", -26.5, -94.5, -72);
-    Probe probe2("probe2", -121.5, -166.5, -144);
-    Probe probe3("probe3", 121.5, 166.5, 144);
-    Probe probe4("probe4", 26.5, 94.5, 72);
+    Probe probe4("probe4", -27, -94.5, -72);
+    Probe probe3("probe3", -121.5, -166.5, -144);
+    Probe probe2("probe2", 121.5, 166.5, 144);
+    Probe probe1("probe1", 27, 94.5, 72);
 
     Point origin(0, 0);
 

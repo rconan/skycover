@@ -177,6 +177,8 @@ Polygon Probe::transform(Point pivot) {
   // cout << "axis: (" << axis.x << ", " << axis.y << "), pt: (" << pivot.x << ", " << pivot.y << ")" << endl;
   // cout << "rotating " << name << " " << theta << " radians" << endl;
 
+  cout << "center: " << this->center.x << ", " << this->center.y << endl;
+
   Polygon translated_poly = translate_poly(this->polygon, this->center, this->rotate_about);
   Polygon rotated_poly    = rotate_poly(translated_poly, theta);
   Polygon retranslated    = translate_poly(rotated_poly, this->rotate_about, this->center);

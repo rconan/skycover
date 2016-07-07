@@ -11,9 +11,12 @@ class Star {
   double r;
   double x;
   double y;
+  double bear;
+  double cablemin;
+  double cablemax;
 
   Star();
-  Star(double x, double y, double _r);
+  Star(double x, double y, double _r, double _bear);
   ~Star();
 
   int in_range(Point *o, double minrange, double maxrange);
