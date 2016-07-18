@@ -2,7 +2,10 @@
 #include "probe.h"
 #include <iostream>
 #include <sstream>
+#include <cmath>
 using namespace std;
+
+#define PI 3.14159265350
 
 StarGroup::StarGroup() { }
 
@@ -69,56 +72,75 @@ string StarGroup::magpair() {
     return res.str();
 }
 
-int StarGroup::valid(int W, int G) {
+double angle180(double ang) {
+  // cout << "ang: " << ang << endl;
+  while (ang > 180)  { ang -= 360; }
+  while (ang < -180) { ang += 360; }
+  return ang;
+}
+
+int StarGroup::valid(int W, int G, int printflg) {
   vector<double> angles;
   Point origin(0, 1);
   double angle;
 
-  for (Star s : stars) {
-    angles.push_back(angle_between_vectors(origin, s.point()));
-    // cout << angles[angles.size()-1] << " ";
-  }
-  // cout << endl;
-
-  if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 1) {
-    if (angles[0] < angles[3]) { return 0; }
-  }
-  if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 2) {
-    if (angles[0] > angles[3]) { return 0; }
-  }
-  if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 1) {
-    return 0;
-  }
-
-  if (quadrant(stars[0].point()) == 1 && quadrant(stars[1].point()) == 1) {
-    if (angles[0] > angles[1]) { return 0; }
-  }
-  if (quadrant(stars[0].point()) == 4 && quadrant(stars[1].point()) == 4) {
-    if (angles[0] > angles[1]) { return 0; }
-  }
-  if (quadrant(stars[0].point()) == 4 && quadrant(stars[1].point()) == 1) {
-    return 0;
-  }
-
-  if (quadrant(stars[1].point()) == 4 && quadrant(stars[2].point()) == 4) {
-    if (angles[1] > angles[2]) { return 0; }
-  }
-  if (quadrant(stars[1].point()) == 3 && quadrant(stars[2].point()) == 3) {
-    if (angles[2] > angles[1]) { return 0; }
-  }
-  if (quadrant(stars[1].point()) == 3 && quadrant(stars[2].point()) == 4) {
-    return 0;
-  }
-
-  if (quadrant(stars[2].point()) == 3 && quadrant(stars[3].point()) == 3) {
-    if (angles[3] > angles[2]) { return 0; }
-  }
-  if (quadrant(stars[2].point()) == 2 && quadrant(stars[3].point()) == 2) {
-    if (angles[3] > angles[2]) { return 0; }
-  }
-  if (quadrant(stars[2].point()) == 2 && quadrant(stars[3].point()) == 3) {
-    return 0;
-  }
+  //  if (abs(angle180(stars[0].bear - stars[3].bear)) < 90) {
+  //    if (printflg) {
+  //      for (Star s : stars) { s.print(); }
+  //      cout << "failed 1/4 constraint: angle180(stars[0].bear - stars[3].bear) = " << angle180(stars[0].bear - stars[3].bear) << endl;
+  //    }
+  //    return 0;
+  //  }
+  //  if (angle180(stars[1].bear - stars[0].bear) < 45) {
+  //    if (printflg) {
+  //      for (Star s : stars) { s.print(); }
+  //      cout << "failed 2/1 constraint" << endl;
+  //    }
+  //    return 0;
+  //  }
+  //  if (angle180(stars[2].bear - stars[1].bear) < 45) {
+  //    if (printflg) {
+  //      for (Star s : stars) { s.print(); }
+  //      cout << "failed 3/2 constraint" << endl;
+  //    }
+  //    return 0;
+  //  }
+  //  if (angle180(stars[3].bear - stars[2].bear) < 45) {
+  //    if (printflg) {
+  //      for (Star s : stars) { s.print(); }
+  //      cout << "failed 4/3 constraint" << endl;
+  //    }
+  //    return 0;
+  //  }
+  //
+  //  // cout << "cablemin: " << stars[2].cablemin << ", cablemax: " << stars[1].cablemax << endl;
+  //  if (angle180(stars[2].cablemin - stars[1].cablemax) < 0) {
+  //    for (Star s : stars) { s.print(); }
+  //    cout << "failed cable constraint" << endl;
+  //    return 0;
+  //  }
+  // 
+  //   for (Star s : stars) {
+  //     angles.push_back(angle_between_vectors(origin, s.point()));
+  //     // cout << angles[angles.size()-1] << " ";
+  //   }
+  //   // cout << endl;
+  // 
+  //   if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 2) {if (angles[0] < angles[3]) { return 0; }}
+  //   if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 1) {if (angles[0] > angles[3]) { return 0; }}
+  //   if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 2) {return 0;}
+  // 
+  //   if (quadrant(stars[0].point()) == 2 && quadrant(stars[1].point()) == 2) {if (angles[0] > angles[1]) { return 0; }}
+  //   if (quadrant(stars[0].point()) == 3 && quadrant(stars[1].point()) == 3) {if (angles[0] > angles[1]) { return 0; }}
+  //   if (quadrant(stars[0].point()) == 3 && quadrant(stars[1].point()) == 2) {return 0;}
+  // 
+  //   if (quadrant(stars[1].point()) == 3 && quadrant(stars[2].point()) == 3) {if (angles[1] > angles[2]) { return 0; }}
+  //   if (quadrant(stars[1].point()) == 4 && quadrant(stars[2].point()) == 4) {if (angles[2] > angles[1]) { return 0; }}
+  //   if (quadrant(stars[1].point()) == 4 && quadrant(stars[2].point()) == 3) {return 0;}
+  // 
+  //   if (quadrant(stars[2].point()) == 4 && quadrant(stars[3].point()) == 4) {if (angles[3] > angles[2]) { return 0; }}
+  //   if (quadrant(stars[2].point()) == 1 && quadrant(stars[3].point()) == 1) {if (angles[3] > angles[2]) { return 0; }}
+  //   if (quadrant(stars[2].point()) == 1 && quadrant(stars[3].point()) == 4) {return 0;}
 
   for (int i=0; i<stars.size(); i++) {
     for (int j=0; j<stars.size(); j++) {

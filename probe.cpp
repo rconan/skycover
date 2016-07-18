@@ -9,6 +9,10 @@ using namespace std;
 
 #define PI 3.1415926535
 
+double distance(Point a, Point b) {
+  return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+}
+
 // Scale a vector v by magnitude m.
 Point scale(Point v, double m) {
   Point scaled(v.x * m, v.y * m);
@@ -16,6 +20,29 @@ Point scale(Point v, double m) {
 }
 
 Probe::Probe() { }
+
+Probe::Probe(double angle, double _width, double length) {
+  Point origin(0, 0);
+  Point origin_vector(0, 1);
+
+  radius = length;
+  width = _width;
+
+  axis = origin_vector.rotate(angle * (PI / 180));
+  center = axis;
+  rotate_about = origin;
+  Edge e(origin, center);
+  Point u = scale(e.normal(), width/2);
+
+  double m = length / distance(origin, center);
+
+  rotate_about = origin;
+
+  add_pt(center.translate(origin, u));
+  add_pt(center.translate(origin, scale(u, -1)));
+  add_pt(polygon.points[1].translate(origin, scale(center, -m)));
+  add_pt(polygon.points[0].translate(origin, scale(center, -m)));
+}
 
 Probe::Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle) {
   name = _name;
@@ -87,10 +114,6 @@ Polygon rotate_poly(Polygon poly, double theta) {
   return rotated_poly;
 }
 
-double distance(Point a, Point b) {
-  return sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
-}
-
 int quadrant(Point pt) {
   if (pt.x >= 0 && pt.y >= 0) { return 1; }
   if (pt.x <= 0 && pt.y >= 0) { return 2; }
@@ -102,7 +125,7 @@ int quadrant(Point pt) {
 // from the origin.
 double Probe::angle_to_point(Point pt) {
   Point origin(0, 1);
-  int mod = 1;
+  int mod = -1;
 
   double axis_angle, pt_angle;
   axis_angle = angle_between_vectors(origin, axis);
@@ -117,76 +140,63 @@ double Probe::angle_to_point(Point pt) {
 
   if (axis_quadrant == 1) {
     if (pt_quadrant == 1 && axis_angle < pt_angle) {
-      mod = -1;
+      mod = 1;
     } else if (pt_quadrant == 4) {
-      mod = -1;
+      mod = 1;
     }
   } else if (axis_quadrant == 2) {
     if (pt_quadrant == 2 && axis_angle > pt_angle) {
-      mod = -1;
+      mod = 1;
     } else if (pt_quadrant == 1) {
-      mod = -1;
+      mod = 1;
     }
   } else if (axis_quadrant == 3) {
     if (pt_quadrant == 3 && axis_angle > pt_angle) {
-      mod = -1;
+      mod = 1;
     } else if (pt_quadrant == 2) {
-      mod = -1;
+      mod = 1;
     }
   } else if (axis_quadrant == 4) {
     if (pt_quadrant == 4 && axis_angle < pt_angle) {
-      mod = -1;
+      mod = 1;
     } else if (pt_quadrant == 3) {
-      mod = -1;
+      mod = 1;
     }
   }
+
+  Point u(pt.x - center.x, pt.y - center.y);
   
-  return angle_between_vectors(pt, axis) * mod;
+  return angle_between_vectors(u, scale(center, -1)) * mod;
 }
-
-/**
-double Probe::solve_theta_offset(Point pt) {
-  double a, b, c;
-  int mod = 1;
-  Point A = Point(pt.x, center.y);
-
-  if (axis == 0) {
-    a = distance(A, center);
-    b = distance(center, pt);
-    c = distance(A, pt);
-
-    if (polygon.points[0].x > 0) { mod = -1; }
-  } else {
-    a = distance(A, pt);
-    b = distance(pt, center);
-    c = distance(A, center);
-
-    if (polygon.points[0].y < 0) { mod = -1; }
-  }
-
-  double cos_C = (a*a + b*b - c*c) / (2*a*b);
-
-  // printf("theta: %f\n", acos(cos_C) * mod);
-
-  return acos(cos_C) * mod;
-}
-**/
 
 Polygon Probe::transform(Point pivot) {
   double theta = angle_to_point(pivot);
   // cout << "axis: (" << axis.x << ", " << axis.y << "), pt: (" << pivot.x << ", " << pivot.y << ")" << endl;
   // cout << "rotating " << name << " " << theta << " radians" << endl;
 
-  Polygon translated_poly = translate_poly(this->polygon, this->center, this->rotate_about);
+  Polygon translated_poly = translate_poly(polygon, center, rotate_about);
   Polygon rotated_poly    = rotate_poly(translated_poly, theta);
-  Polygon retranslated    = translate_poly(rotated_poly, this->rotate_about, this->center);
+  Polygon retranslated    = translate_poly(rotated_poly, rotate_about, center);
+
+  Point origin(0, 0);
+
+  Edge e(center, pivot);
+  Point u = scale(e.normal(), width/2);
+
+  // cout << "before: " << polygon.points[0].x << ", " << polygon.points[0].y << endl;
+  
+  retranslated.points[2] = pivot.translate(origin, u);
+  retranslated.points[3] = pivot.translate(origin, scale(u, -1));
+
+  // cout << "after: " << polygon.points[0].x << ", " << polygon.points[0].y << endl;
   
   return retranslated;
 }
 
 bool Probe::can_cover(Star s) {
-  // true if angle between axis and point is < 90 deg.
-  return abs(angle_to_point(s.point())) <= 1.57079632679;
+  // cout << "distance: " << distance(s.point(), center) << ", radius: " << radius << endl;
+  if (distance(s.point(), center) < radius) { return true; }
+  return false;
 }
 
 void Probe::probe_coverage() {

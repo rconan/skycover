@@ -109,7 +109,7 @@ int has_collisions(StarGroup group, vector<Probe> probes) {
     prb  = probes[i];
     star = group.stars[i];
     polygons.push_back(prb.transform(star.point()));
-    // polygons[i].polyrint();
+    // polygons[i].polyprint();
   }
 
   if (colliding(polygons[0], polygons[polygons.size()-1])) {

@@ -6,11 +6,12 @@
 
 Star::Star() { }
 
-Star::Star(double _x, double _y, double _r) {
+Star::Star(double _x, double _y, double _r, double _bear) {
   pt = Point(_x, _y);
   x  = pt.x;
   y  = pt.y;
   r  = _r;
+  bear  = _bear;
 }
 
 Star::~Star() { }

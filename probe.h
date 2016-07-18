@@ -14,12 +14,14 @@ class Probe {
  public:
   Probe();
   Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle);
+  Probe(double angle, double _width, double length);
   ~Probe();
 
   string name;
   Point center;
   Point rotate_about;
   double radius;
+  double width;
   Polygon polygon;
   Polygon coverable_area;
   Point axis;
