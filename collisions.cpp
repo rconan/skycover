@@ -109,7 +109,7 @@ int has_collisions(StarGroup group, vector<Probe> probes) {
     prb  = probes[i];
     star = group.stars[i];
     polygons.push_back(prb.transform(star.point()));
-    // polygons[i].polyrint();
+    // polygons[i].polyprint();
   }
 
   if (colliding(polygons[0], polygons[polygons.size()-1])) {
@@ -121,5 +121,32 @@ int has_collisions(StarGroup group, vector<Probe> probes) {
     }
   }
 
+  // for (i=0; i<group.stars.size(); i++) {polygons[i].polyprint();}
+  return 0;
+}
+
+int has_collisions_with_current_stars(vector<Probe> probes) {
+  vector<Polygon> polygons;
+  Probe prb;
+  Point  star;
+  int i;
+
+  for (i=0; i<probes.size(); i++) {
+    prb  = probes[i];
+    polygons.push_back(prb.transform(prb.current_star.point()));
+    // polygons[i].polyprint();
+  }
+
+  if (colliding(polygons[0], polygons[polygons.size()-1])) {
+    return 1;
+  }
+  for (i=0; i<polygons.size()-1; i++) {
+    if (colliding(polygons[i], polygons[i+1])) {
+      return 1;
+    }
+  }
+
+
+  // for (i=0; i<probes.size(); i++) {polygons[i].polyprint();}
   return 0;
 }

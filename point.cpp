@@ -17,9 +17,13 @@ Point Point::translate(Point old_orig, Point new_orig) {
   double x_diff = new_orig.x - old_orig.x;
   double y_diff = new_orig.y - old_orig.y;
 
-  // printf("x_diff: %f, y_diff: %f\n", x_diff, y_diff);
+  Point res(x + x_diff, this->y + y_diff);
 
-  return Point(this->x + x_diff, this->y + y_diff);
+  return Point(x + x_diff, this->y + y_diff);
+}
+
+void Point::print(string color) {
+  cout << "(" << x << ", " << y << ", '" << color << "')" << endl;
 }
 
 Point Point::rotate(double theta) {

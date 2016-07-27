@@ -7,19 +7,12 @@ function iterprobes(filename)
     xlim([-1, 1]);
     axis equal;
 
-    % draw_sensor_area(starsx, starsy);
-    axes = [0.951057, 0.309017, ...
-            0.587785, -0.809017, ...
-            -0.587785, -0.809017, ...
-            -0.951057, 0.309017];
-        
     axes = [-0.951057, 0.309017, ...
             -0.587785, -0.809017, ...
             0.587785, -0.809017, ...
             0.951057, 0.309017];
-    % plot([0, 0.309017], [0, 0.951057], 'y');
-            
-            
+
+
     colors = ['r', 'g', 'b', 'y'];
     for i=1:size(colors, 2)
         plot([0, axes(i*2-1)], [0, axes(i*2)], colors(i));
@@ -32,10 +25,9 @@ function iterprobes(filename)
         probe_handles = [];
         for j=1:4
             probe_handles(j) = fill(probes(offset+j).xs, probes(offset+j).ys, colors(j));
-            % pause(1);
         end
         
-        pause(1);
+        pause(0.1);
         
         if i < nconfigurations
             for j=1:4
