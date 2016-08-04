@@ -122,9 +122,7 @@ int StarGroup::valid(int W, int G, int printflg) {
 
   for (Star s : stars) {
     angles.push_back(angle_between_vectors(origin, s.point()));
-    // cout << angles[angles.size()-1] << " ";
   }
-  // cout << endl;
 
   if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 2) {if (angles[0] < angles[3]) { return 0; }}
   if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 1) {if (angles[0] > angles[3]) { return 0; }}
@@ -168,8 +166,9 @@ int StarGroup::valid(int W, int G, int printflg) {
 }
 
 void StarGroup::print() {
+  std::cerr << endl;
     for ( Star s : stars ) {
-        s.print();
+      s.point().print("m");
     }
-    std::cout << endl;
+    std::cerr << endl;
 }

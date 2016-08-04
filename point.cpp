@@ -17,13 +17,13 @@ Point Point::translate(Point old_orig, Point new_orig) {
   double x_diff = new_orig.x - old_orig.x;
   double y_diff = new_orig.y - old_orig.y;
 
-  Point res(x + x_diff, this->y + y_diff);
+  Point res(x + x_diff, y + y_diff);
 
-  return Point(x + x_diff, this->y + y_diff);
+  return res;
 }
 
 void Point::print(string color) {
-  cout << "(" << x << ", " << y << ", '" << color << "')" << endl;
+  cerr << "vector(" << x << ", " << y << ", '" << color << "')" << endl;
 }
 
 Point Point::rotate(double theta) {
@@ -39,4 +39,8 @@ Point Point::normalize() {
   Point p(x / length, y / length);
 
   return p;
+}
+
+double Point::length() {
+  return sqrt(x*x + y*y);
 }

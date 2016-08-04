@@ -8,6 +8,7 @@ using namespace std;
 
 
 #define PI 3.1415926535
+#define PROBESWEEP (15 * (PI / 180))
 
 // Scale a vector v by magnitude m.
 Point scale(Point v, double m) {
@@ -17,11 +18,134 @@ Point scale(Point v, double m) {
 
 Probe::Probe() { }
 
+Polygon get_middle_slider(double angle) {
+  Point origin(0, 0);
+  double basewidth     = 660;
+  double trapbasewidth = 600;
+  double traptopwidth  = 397.5;
+  double toprectwidth  = 150;
+  
+
+  Point LevelOne(0, 1400);
+  Edge  LevelOneEdge(origin, LevelOne);
+  Point BaseWidthVector = scale(LevelOneEdge.normal(), basewidth/2);
+
+  Point LevelTwo(0, 550);
+  Edge  LevelTwoEdge(origin, LevelTwo);
+  Point TrapBaseWidthVector = scale(LevelTwoEdge.normal(), trapbasewidth/2);
+  Point TrapTopWidthVector  = scale(LevelTwoEdge.normal(), traptopwidth/2);
+
+  Point LevelThree(0, 463.6);
+  Edge  LevelThreeEdge(origin, LevelThree);
+  Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
+  
+  Point LevelFour(0, 115.6);
+
+  Polygon MiddleSlider;
+  MiddleSlider.add_pt(LevelOne.translate(origin, BaseWidthVector));
+  MiddleSlider.add_pt(LevelTwo.translate(origin, BaseWidthVector));
+
+  MiddleSlider.add_pt(LevelTwo.translate(origin, TrapBaseWidthVector));
+
+  MiddleSlider.add_pt(LevelThree.translate(origin, TrapTopWidthVector));
+
+  MiddleSlider.add_pt(LevelThree.translate(origin, TopRectWidthVector));
+  MiddleSlider.add_pt(LevelFour.translate(origin, TopRectWidthVector));
+  
+  MiddleSlider.add_pt(LevelFour.translate(origin, scale(TopRectWidthVector, -1)));
+  MiddleSlider.add_pt(LevelThree.translate(origin, scale(TopRectWidthVector, -1)));
+
+  MiddleSlider.add_pt(LevelThree.translate(origin, scale(TrapTopWidthVector, -1)));
+
+  MiddleSlider.add_pt(LevelTwo.translate(origin, scale(TrapBaseWidthVector, -1)));
+
+  MiddleSlider.add_pt(LevelTwo.translate(origin, scale(BaseWidthVector, -1)));
+  MiddleSlider.add_pt(LevelOne.translate(origin, scale(BaseWidthVector, -1)));
+
+  for (int i=0; i<MiddleSlider.points.size(); i++) {
+    MiddleSlider.points[i] = MiddleSlider.points[i].rotate(angle * (PI / 180));
+  }
+
+  return MiddleSlider;
+}
+
+Polygon get_baffle_tube(double angle) {
+  double bafflewidth = 145;
+  
+  Point origin(0, 0);
+  Point LevelOne(0, 474);
+  Point LevelTwo(0, -76);
+
+  Edge  BaffleTubeEdge(origin, LevelOne);
+  Point BaffleTubeWidthVector(scale(BaffleTubeEdge.normal(), bafflewidth/2));
+
+  Polygon BaffleTube;
+  BaffleTube.add_pt(LevelOne.translate(origin, BaffleTubeWidthVector));
+  BaffleTube.add_pt(LevelTwo.translate(origin, BaffleTubeWidthVector));
+  BaffleTube.add_pt(LevelTwo.translate(origin, scale(BaffleTubeWidthVector, -1)));
+  BaffleTube.add_pt(LevelOne.translate(origin, scale(BaffleTubeWidthVector, -1)));
+
+  for (int i=0; i<BaffleTube.points.size(); i++) {
+    BaffleTube.points[i] = BaffleTube.points[i].rotate(angle * (PI / 180));
+  }
+
+  return BaffleTube;
+}
+
+Polygon get_base(double angle) {
+  double basewidth = 800;
+
+  Point origin(0, 0);
+  Point LevelOne(0, 1800);
+  Point LevelTwo(0, 1000);
+
+  Edge BaseEdge(origin, LevelOne);
+  Point BaseWidthVector(scale(BaseEdge.normal(), basewidth/2));
+
+  Polygon Base;
+  Base.add_pt(LevelOne.translate(origin, BaseWidthVector));
+  Base.add_pt(LevelTwo.translate(origin, BaseWidthVector));
+  Base.add_pt(LevelTwo.translate(origin, scale(BaseWidthVector, -1)));
+  Base.add_pt(LevelOne.translate(origin, scale(BaseWidthVector, -1)));
+
+  for (int i=0; i<Base.points.size(); i++) {
+    Base.points[i] = Base.points[i].rotate(angle * (PI / 180));
+  }
+
+  return Base;
+}
+
+Probe::Probe(double _angle) {
+  angle = _angle;
+  
+  Slider     = get_middle_slider(angle);
+  BaffleTube = get_baffle_tube(angle);
+  Base       = get_base(angle);
+
+  parts.push_back(Slider);
+  parts.push_back(BaffleTube);
+
+  start_distance_from_center = 115.6;
+  SliderShaftFront = Point(0, 115.6).rotate(angle * (PI / 180));
+  BaffleTubeCtr = Point(0, 474).rotate(angle * (PI / 180));
+
+  Point origin_vector(0, 1000);
+  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.400);
+  center = axis;
+
+  radius = 1400;
+
+  needs_transfer = false;
+
+  Point origin(0, 0);
+  rotate_about = origin;
+}
+
 Probe::Probe(double angle, double _width, double length) {
   needs_transfer = false;
   
   Point origin(0, 0);
-  Point origin_vector(0, 1);
+  Point origin_vector(0, 1000);
 
   radius = length;
   width = _width;
@@ -39,29 +163,6 @@ Probe::Probe(double angle, double _width, double length) {
   add_pt(polygon.points[1].translate(origin, scale(center, -m)));
   add_pt(polygon.points[0].translate(origin, scale(center, -m)));
 }
-
-// Probe::Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle) {
-//   name = _name;
-//   Point origin_vector(0, 1);
-// 
-//   add_pt(origin_vector.rotate(near_edge_angle_deg * (PI / 180)));
-//   add_pt(origin_vector.rotate(far_edge_angle_deg  * (PI / 180)));
-//   add_pt(scale(polygon.points[1], .4));
-//   add_pt(scale(polygon.points[0], .4));
-// 
-//   axis = origin_vector.rotate(axis_angle * (PI / 180));
-// 
-//   probe_coverage();
-// }
-
-/**
-Probe::Probe(Point _center, double _radius, int _axis, Point _rotate_about) {
-  center = _center;
-  radius = _radius;
-  axis   = _axis;
-  rotate_about = _rotate_about;
-}
-**/
 
 Probe::~Probe(void) { }
 
@@ -136,10 +237,12 @@ double angle_between_vectors(Point u, Point v) {
 Polygon translate_poly(Polygon polygon, Point from, Point to) {
   Polygon translated_poly;
   vector<Point>::iterator it;
-  
+
+  // polygon.polyprint();
   for(it = polygon.points.begin(); it != polygon.points.end(); it++) {
     translated_poly.add_pt(it->translate(from, to));
   }
+  // translated_poly.polyprint();
 
   return translated_poly;
 }
@@ -147,7 +250,7 @@ Polygon translate_poly(Polygon polygon, Point from, Point to) {
 Polygon rotate_poly(Polygon poly, double theta) {
   Polygon rotated_poly;
   vector<Point>::iterator it;
-
+  
   for(it = poly.points.begin(); it != poly.points.end(); ++it) {
     rotated_poly.add_pt(it->rotate(theta));
   }
@@ -168,26 +271,16 @@ int quadrant(Point pt) {
 
 // Angle between probe's axis and the point represented as a vector
 // from the origin.
-// double Probe::angle_to_point(Point pt) {
-//   return angle_between_vectors(pt, axis);
-// }
-
-// Angle between probe's axis and the point represented as a vector
-// from the origin.
 double Probe::angle_to_point(Point pt) {
   Point origin(0, 1);
   int mod = -1;
 
   double axis_angle, pt_angle;
-  axis_angle = angle_between_vectors(origin, axis);
-  pt_angle   = angle_between_vectors(origin, pt);
-
-  // cout << "axis_angle: " << axis_angle << ", pt_angle: " << pt_angle << endl;
+  axis_angle = abs_angle_between_vectors(origin, axis);
+  pt_angle   = abs_angle_between_vectors(origin, pt);
 
   int pt_quadrant   = quadrant(pt);
   int axis_quadrant = quadrant(axis);
-
-  // cout << "axis_quadrant: " << axis_quadrant << ", pt_quadrant: " << pt_quadrant << ", ";
 
   if (axis_quadrant == 1) {
     if (pt_quadrant == 1 && axis_angle < pt_angle) {
@@ -196,15 +289,11 @@ double Probe::angle_to_point(Point pt) {
       mod = 1;
     }
   } else if (axis_quadrant == 2) {
-    if (pt_quadrant == 2 && axis_angle < pt_angle) {
-      mod = 1;
-    } else if (pt_quadrant == 1) {
+    if (pt_quadrant == 2 && pt_angle < axis_angle) {
       mod = 1;
     }
   } else if (axis_quadrant == 3) {
-    if (pt_quadrant == 3 && axis_angle < pt_angle) {
-      mod = 1;
-    } else if (pt_quadrant == 2) {
+    if (pt_quadrant == 3 && pt_angle < axis_angle) {
       mod = 1;
     }
   } else if (axis_quadrant == 4) {
@@ -216,36 +305,139 @@ double Probe::angle_to_point(Point pt) {
   }
 
   Point u(pt.x - center.x, pt.y - center.y);
+
+  return abs_angle_between_vectors(u, scale(center, -1)) * mod;
+}
+
+/**
+mm -> degrees -> arcminutes
+(mm / 3600) * 60
+**/
+
+double baffle_separation(Point p) {
+  Point origin;
+  Point p_location_arcminutes((p.x / 3600) * 60, (p.y / 3600) * 60);
+  double r = distance(p_location_arcminutes, origin);
   
-  return angle_between_vectors(u, scale(center, -1)) * mod;
+  return 115.6 + 78.5 * pow(r/10, 2);
+}
+
+vector<Point> get_points(vector<Polygon> polygons) {
+  vector<Point> res;
+  for (Polygon poly : polygons) {
+    for (Point pt : poly.points) {
+      res.push_back(pt);
+    }
+  }
+
+  return res;
+}
+
+// void Probe::move_slider(double new_dist_from_center) {
+//   Point origin(0, 0);
+//   double slide_amount = new_dist_from_center - start_distance_from_center;
+// 
+//   Point unit_axis = axis.normalize();
+//   for (int i=0; i<Slider.points.size(); i++) {
+//     Slider.points[i] = Slider.points[i].translate(origin, scale(unit_axis, slide_amount));
+//   }
+// 
+//   parts[0] = Slider;
+// }
+
+void arbvector(Point u, Point v, string color) {
+  cerr << "arbvector(" << u.x << ", " << u.y << ", " << v.x << ", " << v.y << ", '" << color << "')" << endl;
+}
+
+Polygon Probe::move_slider(Polygon slider, double theta, Point pivot, double baffle_sep) {
+  Point w = SliderShaftFront.translate(center, rotate_about).rotate(theta).translate(rotate_about, center);
+  Point v = Point(pivot.x - w.x, pivot.y - w.y);
+
+  int mod = 1;
+  // w.print("m");
+  if (distance(w, center) < distance(pivot, center)) {
+    // w.print("g");
+    // u.print("m");
+    mod = -1;
+  }
+
+  Point u = scale(v, (v.length() + (mod * baffle_sep)) / v.length());
+
+  Polygon newslider;
+  Point origin(0, 0);
+
+  for (int i=0; i<slider.points.size(); i++) {
+    newslider.add_pt(slider.points[i].translate(origin, u));
+  }
+
+  return newslider;
+}
+
+void Probe::position_baffle_tube(Point pt) {
+  Point origin(0, 0);
+  Point c = scale(center, -1);
+  Point p = pt.translate(origin, c);
+  double theta = angle_between_vectors(p, c);
+  Point intersection = p.rotate(theta);
+
+  double distance_from_center = distance(origin, c) - distance(origin, intersection);
+
+  // BaffleTubeCtr.print("red");
+  // pt.print("red");
+
+  // intersection.print("green");
+
+  Point unit_axis = axis.normalize();
+  for (int i=0; i<BaffleTube.points.size(); i++) {
+    BaffleTube.points[i] = BaffleTube.points[i].translate(origin, scale(unit_axis, distance_from_center));
+  }
+
+  parts[1] = BaffleTube;
+}
+
+void Probe::reset_parts() {
+  Slider     = get_middle_slider(angle);
+  BaffleTube = get_baffle_tube(angle);
+
+  parts.push_back(Slider);
+  parts.push_back(BaffleTube);
+}
+
+vector<Polygon> Probe::transform_parts(Point pivot) {
+  vector<Polygon> transformed_parts;
+  Point origin(0, 0);
+  
+  double dist_star_from_center   = distance(pivot, origin);
+  double dist_slider_from_center = dist_star_from_center + baffle_separation(pivot);
+
+  // move_slider(dist_slider_from_center);
+  position_baffle_tube(pivot);
+
+  double theta = angle_to_point(pivot);
+
+  for (Polygon part : parts) {
+    Polygon translated_poly = translate_poly(part, center, rotate_about);
+    Polygon rotated_poly    = rotate_poly(translated_poly, theta);
+    Polygon retranslated    = translate_poly(rotated_poly, rotate_about, center);
+
+    transformed_parts.push_back(retranslated);
+  }
+
+  transformed_parts[0] = move_slider(transformed_parts[0], theta, pivot, baffle_separation(pivot));
+
+  reset_parts();
+
+  return transformed_parts;
 }
 
 Polygon Probe::transform(Point pivot) {
-  double theta = angle_to_point(pivot);
-
-  // cout << "axis: (" << axis.x << ", " << axis.y << "), pt: (" << pivot.x << ", " << pivot.y << ")" << endl;
-  // cout << "rotating " << name << " " << theta << " radians" << endl;
-
-  // cout << "center: " << this->center.x << ", " << this->center.y << endl;
-
-  // cout << "vector";
-  // pivot.print("red");
-
-  Polygon translated_poly = translate_poly(this->polygon, this->center, this->rotate_about);
-  Polygon rotated_poly    = rotate_poly(translated_poly, theta);
-  Polygon retranslated    = translate_poly(rotated_poly, this->rotate_about, this->center);
-
   Point origin(0, 0);
   
-  Edge e(axis, pivot);
-  Point u = scale(e.normal(), width/2);
+  double theta = angle_to_point(pivot);
 
-  // cout << "before: " << retranslated.points[2].x << ", " << retranslated.points[2].y << endl;
-  
-  retranslated.points[2] = pivot.translate(origin, u);
-  retranslated.points[3] = pivot.translate(origin, scale(u, -1));
-
-  // cout << "after: " << retranslated.points[2].x << ", " << retranslated.points[2].y << endl;
+  Polygon translated_poly = translate_poly(polygon, center, rotate_about);
+  Polygon rotated_poly    = rotate_poly(translated_poly, theta);
+  Polygon retranslated    = translate_poly(rotated_poly, rotate_about, center);
 
   return retranslated;
 }
@@ -326,33 +518,33 @@ double Probe::track_distance(Star s) {
   // v.print("red");
   // u.print("black");
 
-  return abs(angle_between_vectors(v, u));
+  return abs_angle_between_vectors(v, u);
 }
 
-int Probe::track(Star s, double dist) {
-  Point newpos(s.point().rotate(dist));
+int Probe::track(double dist) {
+  Point newpos = base_star.point().rotate(dist);
 
-  // cout << "angle to newpos: " << angle_to_point(newpos) << endl;
-  // cout << "track distance: "  << track_distance(s) << endl;
+  if ( (angle_to_point(newpos) > track_distance(base_star))
+       || (distance(newpos, center) > radius) ) {
 
-  if (angle_to_point(newpos) > track_distance(s)) {
-
-    // cout << "beginning transfer" << endl;
-
-    // if (abs(track_distance(s)) < dist) {
-    // cerr << track_distance(s) << ", " << dist << endl;
     if (backward_transfers.size() == 0) {
       return -1;
     }
 
-    // cout << "making transfer" << endl;
+    // cerr << "transferring" << endl;
 
-    Star transfer = backward_transfers[backward_transfer_idx];
-    Point transfer_pt = transfer.point().rotate(dist);
-    current_star = Star(transfer_pt.x, transfer_pt.y, transfer.r, transfer.bear);
+    base_star = backward_transfers[backward_transfer_idx];
+
+    // base_star.point().print("red");
+    // cerr << "till in range: " << distance_till_inrange(base_star) << endl;
+    // vector<Point> range_extremes = get_range_extremes(base_star);
+    // range_extremes[0].print("m");
+    // range_extremes[1].print("m");
+
+    Point transfer_pt = base_star.point().rotate(dist);
+    current_star = Star(transfer_pt.x, transfer_pt.y, base_star.r, base_star.bear);
   } else {
-    Point spoint = s.point().rotate(dist);
-    current_star = Star(spoint.x, spoint.y, s.r, s.bear);
+    current_star = Star(newpos.x, newpos.y, base_star.r, base_star.bear);
   }
 
   return 0;
@@ -382,6 +574,11 @@ bool Probe::in_range(Star s) {
     return false;
   }
 
+  if (distance(center, s.point()) > radius) {
+    return false;
+  }
+
+
   Point star_enter_range, star_exit_range;
   if (angle_between_vectors(range_extremes[0], axis) < 0) {
     star_exit_range  = range_extremes[0];
@@ -391,21 +588,9 @@ bool Probe::in_range(Star s) {
     star_enter_range = range_extremes[0];
   }
 
-  // cout << "vector";
-  // s.point().print("red");
-  // cout << "vector";
-  // star_enter_range.print("black");
-  // cout << "vector";
-  // star_exit_range.print("black");
-
-  // cout << angle_between_vectors(s.point(), star_enter_range) <<
-  //   ", " << angle_between_vectors(s.point(), star_exit_range) << endl;
-
-  // cout << endl;
-
   if ( (angle_between_vectors(s.point(), star_enter_range) < 0)
        && (angle_between_vectors(s.point(), star_exit_range) > 0) ) {
-    if (abs(angle_to_point(s.point())) < (15 * (PI / 180))) {
+    if (abs(angle_to_point(s.point())) < PROBESWEEP) {
       return true;
     }
   }
@@ -418,12 +603,12 @@ double Probe::distance_till_inrange(Star s) {
 
   Point star_enter_range;
   if (angle_between_vectors(range_extremes[0], axis) > 0) {
-    star_enter_range = range_extremes[1];
-  } else {
     star_enter_range = range_extremes[0];
+  } else {
+    star_enter_range = range_extremes[1];
   }
 
-  return angle_between_vectors(s.point(), star_enter_range);
+  return abs_angle_between_vectors(s.point(), star_enter_range);
 }
 
 bool Probe::intersects_path_of(Star s) {
@@ -433,7 +618,7 @@ bool Probe::intersects_path_of(Star s) {
 void Probe::get_backward_transfers(vector<Star> stars, double track_dist, double maglim) {
   for (Star s : stars) {
     if (intersects_path_of(s)) {
-      if (! in_range(s)) {
+      if (!in_range(s)) {
         if ( (distance_till_inrange(s) < track_dist) && (s.r <= maglim) ) {
           backward_transfers.push_back(s);
         }

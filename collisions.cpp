@@ -94,11 +94,54 @@ int colliding(Polygon poly1, Polygon poly2) {
 }
 
 void transform_and_print(StarGroup group, vector<Probe> probes) {
-  for (int i=0; i<group.stars.size(); i++) {
-    probes[i].transform(group.stars[i].point()).polyprint();
-  }
+  //   for (int i=0; i<group.stars.size(); i++) {
+  //     probes[i].transform(group.stars[i].point()).polyprint();
+  //   }
 }
 
+int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
+  for (int i=0; i<probes.size()-1; i++) {
+    Probe probe1 = probes[i];
+    Probe probe2 = probes[i+1];
+
+    // cout << "here" << endl;
+
+    vector<Polygon> probe1parts = probe1.transform_parts(group.stars[i].point());
+    vector<Polygon> probe2parts = probe2.transform_parts(group.stars[i+1].point());
+
+    // cout << "and here" << endl;
+
+    for (Polygon probe1part : probe1parts) {
+      for (Polygon probe2part : probe2parts) {
+        if (colliding(probe1part, probe2part)) {
+          return 1;
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+int has_collisions_with_current_stars(vector<Probe> probes) {
+  for (int i=0; i<probes.size()-1; i++) {
+    Probe probe1 = probes[i];
+    Probe probe2 = probes[i+1];
+
+    vector<Polygon> probe1parts = probe1.transform_parts(probes[i].current_star.point());
+    vector<Polygon> probe2parts = probe2.transform_parts(probes[i+1].current_star.point());
+
+    for (Polygon probe1part : probe1parts) {
+      for (Polygon probe2part : probe2parts) {
+        if (colliding(probe1part, probe2part)) {
+          return 1;
+        }
+      }
+    }
+  }
+
+  return 0;
+}
 int has_collisions(StarGroup group, vector<Probe> probes) {
   vector<Polygon> polygons;
   Probe prb;
@@ -125,28 +168,3 @@ int has_collisions(StarGroup group, vector<Probe> probes) {
   return 0;
 }
 
-int has_collisions_with_current_stars(vector<Probe> probes) {
-  vector<Polygon> polygons;
-  Probe prb;
-  Point  star;
-  int i;
-
-  for (i=0; i<probes.size(); i++) {
-    prb  = probes[i];
-    polygons.push_back(prb.transform(prb.current_star.point()));
-    // polygons[i].polyprint();
-  }
-
-  if (colliding(polygons[0], polygons[polygons.size()-1])) {
-    return 1;
-  }
-  for (i=0; i<polygons.size()-1; i++) {
-    if (colliding(polygons[i], polygons[i+1])) {
-      return 1;
-    }
-  }
-
-
-  // for (i=0; i<probes.size(); i++) {polygons[i].polyprint();}
-  return 0;
-}

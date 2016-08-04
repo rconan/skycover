@@ -18,8 +18,8 @@ using namespace std;
 
 
 #define PI               3.1415926535
-#define MINRANGE         0.1
-#define MAXRANGE         0.167
+#define MINRANGE         (0.1   * 3600)
+#define MAXRANGE         (0.167 * 3600)
 #define MINIMUMTRACK     (60 * (PI / 180))
 #define MINIMUMTRACK_DEG 60
 
@@ -49,7 +49,7 @@ bool safe_distance_from_center(Star star) {
   Point star_pt(star.x, star.y), origin(0, 0);
   
   double dist = distance(star_pt, origin);
-  
+
   if (MINRANGE < dist && dist < MAXRANGE) {
     return true;
   } else {
@@ -62,16 +62,6 @@ vector<Star> in_probe_range(vector<Star> stars, Probe probe, double probe_angle)
   int i;
 
   for (i=0; i<stars.size(); i++) {
-    // if (probe.name.compare("probe4") == 0) {
-    //   cout << probe.name << " ";
-    //   cout << stars[i].x << ", " << stars[i].y << " ";
-    //   cout << "safe_distance: " << safe_distance_from_center(stars[i]) << " ";
-    //   cout << "can_cover: " << probe.coverable_area.point_in_poly(stars[i].point()) << endl;
-    // }
-
-    // cout << "vector";
-    // probe.center.print("black");
-
     if (safe_distance_from_center(stars[i]) && probe.in_range(stars[i])) {
       stars[i].cablemax = (probe_angle + 90 + stars[i].bear) / 2;
       stars[i].cablemin = min(probe_angle, stars[i].bear);
@@ -246,12 +236,13 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
   for (int i=0; i<probes.size(); i++) {
     for (int k=0; k<probes.size(); k++) {
       probes[k].current_star = group.stars[k];
+      probes[k].base_star    = group.stars[k];
     }
     
     double track_dist = probes[i].track_distance(group.stars[i]);
     if (track_dist < MINIMUMTRACK) {
       for (int j=0; j<probes.size(); j++) {
-        if (probes[j].track(group.stars[j], track_dist) == -1) {
+        if (probes[j].track(track_dist) == -1) {
           return false;
         }
       }
@@ -265,6 +256,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
       return false;
     }
   }
+  
   return true;
 }
 
@@ -274,22 +266,37 @@ void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<
     if (track_dist < MINIMUMTRACK) {
       probes[i].needs_transfer = true;
       probes[i].get_backward_transfers(stars, track_dist, max(wfsmag, gdrmag));
-      // cout << "got " << probes[i].backward_transfers.size() << " for probe " << i << endl;
+
+      // if (i == 0) {
+      //   for (int j=0; j<probes[i].backward_transfers.size(); j++) {
+      //     probes[i].backward_transfers[j].point().print("m");
+      //   }
+      // }
+
     }
   }
 }
 
 void transform_and_print(vector<Probe> probes, StarGroup group) {
   for (int i=0; i<probes.size(); i++) {
-    probes[i].transform(group.stars[i].point()).polyprint();
-    // probes[i].transform(group.stars[i].point());
+    // group.stars[i].point().print("red");
+    
+    vector<Polygon> transformed_parts = probes[i].transform_parts(group.stars[i].point());
+    transformed_parts[1].polyprint();
+    transformed_parts[0].polyprint();
+    probes[i].Base.polyprint();
   }
 }
 
 bool collisions_while_tracking(vector<Probe> probes, StarGroup group) {
+  for (int k=0; k<probes.size(); k++) {
+    probes[k].current_star = group.stars[k];
+    probes[k].base_star    = group.stars[k];
+  }
+
   for (int i=0; i<MINIMUMTRACK_DEG; i++) {
     for (int j=0; j<probes.size(); j++) {
-      probes[j].track(group.stars[j], i * (PI / 180));
+      probes[j].track(i * (PI / 180));
       if (has_collisions_with_current_stars(probes)) {
         return true;
       }
@@ -300,13 +307,26 @@ bool collisions_while_tracking(vector<Probe> probes, StarGroup group) {
 }
 
 void track_and_print_probes(vector<Probe> probes, StarGroup group) {
+  for (int k=0; k<probes.size(); k++) {
+    probes[k].current_star = group.stars[k];
+    probes[k].base_star    = group.stars[k];
+  }
+
   for (int i=0; i<MINIMUMTRACK_DEG; i++) {
     for (int j=0; j<probes.size(); j++) {
-      probes[j].track(group.stars[j], i * (PI / 180));
-      Polygon transformed = probes[j].transform(probes[j].current_star.point());
-      transformed.polyprint();
+      probes[j].track(i * (PI / 180));
+
+      vector<Polygon> transformed_parts = probes[j].transform_parts(probes[j].current_star.point());
+
+      transformed_parts[1].polyprint();
+      transformed_parts[0].polyprint();
+      probes[j].Base.polyprint();
     }
   }
+}
+
+void here() {
+  cout << "here" << endl;
 }
 
 bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag, int printflg) {
@@ -335,17 +355,16 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
         probes[i].backward_transfers.clear();
         probes[i].current_star = current_group.stars[i];
       }
+
       
       if (current_group.valid(wfsmag, gdrmag, 0)) {
 
-        if ( !has_collisions(current_group, probes) ) {
+        // transform_and_print(probes, current_group);
+        // exit(0);
+
+        if ( !has_collisions_in_parts(current_group, probes) ) {
 
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
-
-          // for (Probe p : probes) {
-          //   cout << p.backward_transfers.size() << endl;
-          // }
-          // cout << endl;
 
           for (Probe p : probes) {
             if (p.needs_transfer && p.backward_transfers.size() == 0) {
@@ -404,8 +423,8 @@ vector<Star> load_stars(string filename) {
     for ( ; getline(infile, line); ) {
         if (current_line > 2) {
             tokens = split(line, '\t');
-            double x = stod(tokens[0]);
-            double y = stod(tokens[1]);
+            double x = stod(tokens[0]) * 3600;
+            double y = stod(tokens[1]) * 3600;
             double r = stod(tokens[18]);
             double bear = stod(tokens[3]);
 
@@ -417,7 +436,7 @@ vector<Star> load_stars(string filename) {
               int minutes = stoi(match.str(2));
               double seconds = stod(match.str(3));
               bear = degrees + ( (minutes + (seconds / 60)) / 60);
-              cout << bear << endl;
+              // cout << bear << endl;
             }
 
             stars.push_back(Star(x, y, r, bear));
@@ -463,20 +482,6 @@ map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> prob
       currentpair = currentpairstream.str();
 
       current_bin = probestars_in_bin(probestars, bin);
-
-      // for ( Star s : current_bin[3] ) {
-      //   cout << s.x << " " << s.y << " " << s.r << endl;
-      // }
-
-      // if (wfsmag == 13 && gdrmag == 14) {
-      //   cout << "bins at 13 14: " << bin << endl;
-      //   for (int k=0; k<4; k++) {
-      //     cout << "current_bin[" << k << "]" << endl;
-      //     for (Star s : current_bin[k]) {
-      //       cout << s.x << " " << s.y << endl;
-      //     }
-      //   }
-      // }
 
       if (result[currentpair] == true) { continue; }
 
@@ -528,24 +533,26 @@ void dogrid_file(map<string, int> ValidMags, double nfiles) {
     }
 }
 
-void write_stars(vector<Star> stars, string filename) {
+void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   std::ofstream fout;
   fout.open(filename);
 
   // cerr << "writing stars to " << filename << endl;
 
   for (Star s : stars) {
-    fout << s.x << " " << s.y << endl;
+    if (s.r < max(wfsmag, gdrmag)) {
+      fout << s.x << " " << s.y << endl;
+    }
   }
 
   fout.close();
 }
 
 int main(int argc, char *argv[]) {
-  Probe probe1(72, 0.15, 1);
-  Probe probe2(144, 0.15, 1);
-  Probe probe3(-144, 0.15, 1);
-  Probe probe4(-72, 0.15, 1);
+  Probe probe1(0);
+  Probe probe2(90);
+  Probe probe3(180);
+  Probe probe4(-90);
 
   Point origin(0, 0);
 
@@ -555,22 +562,42 @@ int main(int argc, char *argv[]) {
   probes.push_back(probe3);
   probes.push_back(probe4);
 
-  // Point u(0.965272, -0.164661);
-  // Point v(0.896345, -0.443357);
-
-  // Point p(-0.0547116, -0.134341);
-
-  // for (int i=0; i<probes.size(); i++) {
-  //   if (i == 0) {
-  //     probes[i].transform(p).polyprint();
-  //   } else {
-  //     probes[i].polygon.polyprint();
-  //   }
-  // }
+  // cout << "(" << probe4.center.x << ", " << probe4.center.y << ")" << endl;
 
   // exit(0);
 
   vector<Star>  stars;
+
+  // Point a(-387.5, 20);
+  // Point b(-500.74, -360.7);
+  // Point c(50.4, -282.3);
+  // Point d(373.6, 0);
+
+  // a.print("red");
+  // b.print("red");
+  // c.print("red");
+  // d.print("red");
+
+  // Star stara(a.x, a.y, 0, 0);
+  // Star starb(b.x, b.y, 0, 0);
+  // Star starc(c.x, c.y, 0, 0);
+  // Star stard(d.x, d.y, 0, 0);
+
+  // vector<Star> pts;
+  // pts.push_back(stara);
+  // pts.push_back(starb);
+  // pts.push_back(starc);
+  // pts.push_back(stard);
+
+  // StarGroup group = StarGroup(pts);
+
+  // transform_and_print(probes, group);
+
+  // Point a(376.5, -23.42);
+  // Star  stara(a.x, a.y, 0, 0);
+  // cout << probe1.distance_till_inrange(stara) << endl;
+
+  // exit(0);
 
   map<string, int>  ValidMagnitudes;
   map<string, bool> CurrentFileValidMagnitudes;
@@ -581,12 +608,10 @@ int main(int argc, char *argv[]) {
   string file_regex;
   if (argc < 2) {
     file_regex = ".*";
-  } else if (argc == 4) {
+  } else {
     wfsmag = atoi(argv[1]);
     gdrmag = atoi(argv[2]);
     nfiles = atoi(argv[3]);
-  } else {
-    file_regex = argv[1];
   }
 
   vector<string> starfield_files = files_in_dir("Bes/", ".*");
@@ -594,25 +619,43 @@ int main(int argc, char *argv[]) {
 
   bool valid_file;
   vector< vector<Star> > probestars, current_bin;
+    int printflg = 0;
+    double valid_files = 0;
 
-  int printflg = 0;
-  double valid_files = 0;
-  for (int i=0; i<nfiles; i++) {
-    // cerr << "Processing file " << starfield_files[i] << endl;
-    stars = load_stars(starfield_files[i]);
+  if (strcmp("--only", argv[3]) == 0) {
+    cerr << "Processing file " << starfield_files[stoi(argv[4])-1] << endl;
+    stars = load_stars(starfield_files[stoi(argv[4])-1]);
 
-    probestars  = get_probe_stars(stars, probes);
+    probestars = get_probe_stars(stars, probes);
     current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
 
-    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, printflg)) {
-      valid_files++;
-      ostringstream starfile;
-      starfile << "starfiles/starfield" << valid_files << ".cat";
-      write_stars(stars,  starfile.str());
+    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, 0)) {
+      cerr << 1 << endl;
+    } else {
+      cerr << 0 << endl;
+    }
+
+    ostringstream starfile;
+    write_stars(stars, "starfiles/starfield1.cat", wfsmag, gdrmag);
+  } else {
+    for (int i=0; i<nfiles; i++) {
+      // cerr << "Processing file " << starfield_files[i] << ": ";
+      stars = load_stars(starfield_files[i]);
+
+      probestars  = get_probe_stars(stars, probes);
+      current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
+
+      if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, printflg)) {
+        cerr << starfield_files[i] << ": valid" << endl;
+        valid_files++;
+        ostringstream starfile;
+        starfile << "starfiles/starfield" << valid_files << ".cat";
+        write_stars(stars, starfile.str(), wfsmag, gdrmag);
+      }
     }
   }
-
   cerr << valid_files / nfiles << endl;
+
 
   return 0;
 }

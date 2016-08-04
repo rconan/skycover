@@ -16,9 +16,16 @@ class Point {
   Point translate(Point old_orig, Point new_orig);
   Point rotate(double theta);
   void print(std::string color);
+  double length();
 
   // move this to Vector class eventually
   Point normalize();
+
+  bool operator < (Point b) {
+    if (y != b.y)
+      return y < b.y;
+    return x < b.x;
+  }
 };
 
 #endif

@@ -7,3 +7,4 @@ int colliding(Polygon poly1, Polygon poly2);
 int has_collisions(StarGroup group, vector<Probe> probes);
 void transform_and_print(StarGroup group, vector<Probe> probes);
 int has_collisions_with_current_stars(vector<Probe> probes);
+int has_collisions_in_parts(StarGroup group, vector<Probe> probes);
