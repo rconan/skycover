@@ -22,6 +22,7 @@ class Star {
   int in_range(Point *o, double minrange, double maxrange);
   void print();
   Point point();
+  Star rotate(double dist);
 };
 
 #endif

@@ -124,12 +124,26 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
 }
 
 int has_collisions_with_current_stars(vector<Probe> probes) {
-  for (int i=0; i<probes.size()-1; i++) {
-    Probe probe1 = probes[i];
-    Probe probe2 = probes[i+1];
+  Probe probe1 = probes[0];
+  Probe probe2 = probes[probes.size()-1];
 
-    vector<Polygon> probe1parts = probe1.transform_parts(probes[i].current_star.point());
-    vector<Polygon> probe2parts = probe2.transform_parts(probes[i+1].current_star.point());
+  vector<Polygon> probe1parts = probe1.transform_parts(probes[0].current_star.point());
+  vector<Polygon> probe2parts = probe2.transform_parts(probes[probes.size()-1].current_star.point());
+
+  for (Polygon probe1part : probe1parts) {
+    for (Polygon probe2part : probe2parts) {
+      if (colliding(probe1part, probe2part)) {
+        return 1;
+      }
+    }
+  }
+
+  for (int i=0; i<probes.size()-1; i++) {
+    probe1 = probes[i];
+    probe2 = probes[i+1];
+
+    probe1parts = probe1.transform_parts(probes[i].current_star.point());
+    probe2parts = probe2.transform_parts(probes[i+1].current_star.point());
 
     for (Polygon probe1part : probe1parts) {
       for (Polygon probe2part : probe2parts) {

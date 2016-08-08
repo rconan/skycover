@@ -8,7 +8,9 @@ using namespace std;
 
 
 #define PI 3.1415926535
-#define PROBESWEEP (15 * (PI / 180))
+#define SWEEPANGLE (15 * (PI / 180))
+#define MINRANGE         (0.1   * 3600)
+#define MAXRANGE         (0.167 * 3600)
 
 // Scale a vector v by magnitude m.
 Point scale(Point v, double m) {
@@ -191,43 +193,34 @@ double abs_angle_between_vectors(Point u, Point v) {
 // Should return the angle that u must rotate to rest parallel to v.
 double angle_between_vectors(Point u, Point v) {
   Point origin(0, 1);
-  int mod = 1;
+  int mod = -1;
 
   double u_angle, v_angle;
   u_angle = abs_angle_between_vectors(origin, u);
   v_angle = abs_angle_between_vectors(origin, v);
 
-  // cout << "point: (" << v.x << ", " << v.y << endl;
-  // cout << "u_angle: " << u_angle << ", v_angle: " << v_angle << endl;
-
-  int v_quadrant = quadrant(v);
   int u_quadrant = quadrant(u);
-
-  // cout << "u_quadrant: " << u_quadrant << ", v_quadrant: " << v_quadrant << ", " << endl;
+  int v_quadrant = quadrant(v);
 
   if (u_quadrant == 1) {
     if (v_quadrant == 1 && u_angle < v_angle) {
-      mod = -1;
+      mod = 1;
     } else if (v_quadrant == 4) {
-      mod = -1;
+      mod = 1;
     }
   } else if (u_quadrant == 2) {
-    if (v_quadrant == 2 && u_angle > v_angle) {
-      mod = -1;
-    } else if (v_quadrant == 1) {
-      mod = -1;
+    if (v_quadrant == 2 && v_angle < u_angle) {
+      mod = 1;
     }
   } else if (u_quadrant == 3) {
-    if (v_quadrant == 3 && u_angle > v_angle) {
-      mod = -1;
-    } else if (v_quadrant == 2) {
-      mod = -1;
+    if (v_quadrant == 3 && v_angle < u_angle) {
+      mod = 1;
     }
   } else if (u_quadrant == 4) {
     if (v_quadrant == 4 && u_angle < v_angle) {
-      mod = -1;
+      mod = 1;
     } else if (v_quadrant == 3) {
-      mod = -1;
+      mod = 1;
     }
   }
   
@@ -521,50 +514,93 @@ double Probe::track_distance(Star s) {
   return abs_angle_between_vectors(v, u);
 }
 
+int partition(vector<Star>& stars, int p, int q, Point center, Star current_star)
+{
+  Point probe_vector = Point(current_star.x - center.x, current_star.y - center.y);
+  Star x = stars[p];
+  Point x_vector = Point(x.x - center.x, x.y - center.y);
+  int i = p;
+  int j;
+
+  for(j=p+1; j<q; j++) {
+    Point s_vector = Point(stars[j].x - center.x, stars[j].y - center.y);
+    
+    if (abs_angle_between_vectors(probe_vector, s_vector) >= abs_angle_between_vectors(probe_vector, x_vector)) {
+      i = i+1;
+      swap(stars[i], stars[j]);
+    }
+
+  }
+  
+  swap(stars[i], stars[p]);
+
+  return i;
+}
+
+// Implementation of quicksort on Star objects. Sorts by magnitude.
+void sort_by_transfer_distance(vector<Star>& stars, int p, int q, Point center, Star current_star)
+{
+    int r;
+    if(p < q)
+    {
+      r = partition(stars, p, q, center, current_star);
+      sort_by_transfer_distance(stars, p, r, center, current_star);  
+      sort_by_transfer_distance(stars, r+1, q, center, current_star);
+    }
+}
+
+
+
 int Probe::track(double dist) {
-  Point newpos = base_star.point().rotate(dist);
+  if (! in_range(base_star.rotate(dist))) {
 
-  if ( (angle_to_point(newpos) > track_distance(base_star))
-       || (distance(newpos, center) > radius) ) {
+   sort_by_transfer_distance(backward_transfers, 0, backward_transfers.size(), center, current_star);
 
-    if (backward_transfers.size() == 0) {
+    bool found = false;
+    for (Star s : backward_transfers) {
+      // s.rotate(dist).point().print("r");
+      if (in_range(s.rotate(dist))) {
+        found = true;
+        base_star = s;
+        // base_star.point().print("m");
+        current_star  = s.rotate(dist);
+
+        // current_star.point().print("g");
+
+        break;
+      }
+    }
+
+    if (found == false) {
       return -1;
     }
 
-    // cerr << "transferring" << endl;
-
-    base_star = backward_transfers[backward_transfer_idx];
-
-    // base_star.point().print("red");
-    // cerr << "till in range: " << distance_till_inrange(base_star) << endl;
-    // vector<Point> range_extremes = get_range_extremes(base_star);
-    // range_extremes[0].print("m");
-    // range_extremes[1].print("m");
-
-    Point transfer_pt = base_star.point().rotate(dist);
-    current_star = Star(transfer_pt.x, transfer_pt.y, base_star.r, base_star.bear);
   } else {
-    current_star = Star(newpos.x, newpos.y, base_star.r, base_star.bear);
+    current_star = base_star.rotate(dist);
   }
+
+  distance_tracked = dist;
 
   return 0;
 }
-
-/**
-   set up two angles:
-       1. star to range
-       2. axis to star
-   if (1 is positive) and (2 is negative)
-       if (1 < track_distance)
-           then add that shit
- **/
-
 
 vector<Point> Probe::get_range_extremes(Star s) {
   Point origin(0, 0);
   vector<Point> intersections = circle_intersections(center, radius, origin, distance(origin, s.point()));
 
   return intersections;
+}
+
+bool safe_distance_from_center(Star star) {
+  Point star_pt(star.x, star.y), origin(0, 0);
+  
+  double dist = distance(star_pt, origin);
+
+  if (MINRANGE < dist && dist < MAXRANGE) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool Probe::in_range(Star s) {
@@ -578,6 +614,11 @@ bool Probe::in_range(Star s) {
     return false;
   }
 
+  if (! safe_distance_from_center(s)) {
+    return false;
+  }
+
+  // cout << "passed distance tests" << endl;
 
   Point star_enter_range, star_exit_range;
   if (angle_between_vectors(range_extremes[0], axis) < 0) {
@@ -588,11 +629,11 @@ bool Probe::in_range(Star s) {
     star_enter_range = range_extremes[0];
   }
 
-  if ( (angle_between_vectors(s.point(), star_enter_range) < 0)
-       && (angle_between_vectors(s.point(), star_exit_range) > 0) ) {
-    if (abs(angle_to_point(s.point())) < PROBESWEEP) {
-      return true;
-    }
+  // cout << abs(angle_to_point(s.point())) << endl;
+  // cout << "SWEEPANGLE: " << SWEEPANGLE << endl;
+
+  if (abs(angle_to_point(s.point())) < SWEEPANGLE) {
+    return true;
   }
 
   return false;
@@ -617,12 +658,8 @@ bool Probe::intersects_path_of(Star s) {
 
 void Probe::get_backward_transfers(vector<Star> stars, double track_dist, double maglim) {
   for (Star s : stars) {
-    if (intersects_path_of(s)) {
-      if (!in_range(s)) {
-        if ( (distance_till_inrange(s) < track_dist) && (s.r <= maglim) ) {
-          backward_transfers.push_back(s);
-        }
-      }
+    if (s.r <= maglim) {
+      backward_transfers.push_back(s);
     }
   }
 }

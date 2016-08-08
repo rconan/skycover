@@ -45,18 +45,6 @@ vector<int> get_list_sizes(vector< vector<Star> > lists) {
     return result;
 }
 
-bool safe_distance_from_center(Star star) {
-  Point star_pt(star.x, star.y), origin(0, 0);
-  
-  double dist = distance(star_pt, origin);
-
-  if (MINRANGE < dist && dist < MAXRANGE) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 vector<Star> in_probe_range(vector<Star> stars, Probe probe, double probe_angle) {
   vector<Star> result;
   int i;
@@ -232,11 +220,63 @@ bool valid_with_current_stars(vector<Probe> probes, int wfsmag, int gdrmag) {
   return group.valid(wfsmag, gdrmag, 0);
 }
 
+bool collisions_while_tracking(vector<Probe> probes, StarGroup group) {
+  for (int k=0; k<probes.size(); k++) {
+    probes[k].current_star = group.stars[k];
+    probes[k].base_star    = group.stars[k];
+    probes[k].backward_transfer_idx = 0;
+  }
+
+  for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
+    for (int j=0; j<probes.size(); j++) {
+      probes[j].track(i * (PI / 180));
+      if (has_collisions_with_current_stars(probes)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+
+bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
+  for (int k=0; k<probes.size(); k++) {
+    probes[k].current_star = group.stars[k];
+    probes[k].base_star    = group.stars[k];
+    probes[k].backward_transfer_idx = 0;
+  }
+
+  for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
+    for (int l=0; l<probes.size(); l++) {
+      if (probes[l].track(i * (PI / 180)) == -1) {
+        return false;
+      }
+    }
+  }
+
+  for (int j=0; j<probes.size(); j++) {
+    if (probes[j].track(MINIMUMTRACK) == -1) {
+      return false;
+    }
+    if (probes[j].distance_tracked < MINIMUMTRACK) {
+      return false;
+    }
+  }
+  if (collisions_while_tracking(probes, group)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
 bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
   for (int i=0; i<probes.size(); i++) {
     for (int k=0; k<probes.size(); k++) {
       probes[k].current_star = group.stars[k];
       probes[k].base_star    = group.stars[k];
+      probes[k].backward_transfer_idx = 0;
     }
     
     double track_dist = probes[i].track_distance(group.stars[i]);
@@ -256,9 +296,10 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
       return false;
     }
   }
-  
+
   return true;
 }
+**/
 
 void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<Star> stars, int wfsmag, int gdrmag) {
   for (int i=0; i<probes.size(); i++) {
@@ -266,13 +307,6 @@ void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<
     if (track_dist < MINIMUMTRACK) {
       probes[i].needs_transfer = true;
       probes[i].get_backward_transfers(stars, track_dist, max(wfsmag, gdrmag));
-
-      // if (i == 0) {
-      //   for (int j=0; j<probes[i].backward_transfers.size(); j++) {
-      //     probes[i].backward_transfers[j].point().print("m");
-      //   }
-      // }
-
     }
   }
 }
@@ -288,31 +322,13 @@ void transform_and_print(vector<Probe> probes, StarGroup group) {
   }
 }
 
-bool collisions_while_tracking(vector<Probe> probes, StarGroup group) {
-  for (int k=0; k<probes.size(); k++) {
-    probes[k].current_star = group.stars[k];
-    probes[k].base_star    = group.stars[k];
-  }
-
-  for (int i=0; i<MINIMUMTRACK_DEG; i++) {
-    for (int j=0; j<probes.size(); j++) {
-      probes[j].track(i * (PI / 180));
-      if (has_collisions_with_current_stars(probes)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 void track_and_print_probes(vector<Probe> probes, StarGroup group) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
     probes[k].base_star    = group.stars[k];
   }
 
-  for (int i=0; i<MINIMUMTRACK_DEG; i++) {
+  for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
     for (int j=0; j<probes.size(); j++) {
       probes[j].track(i * (PI / 180));
 
@@ -372,6 +388,14 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
             }
           }
 
+          if (trackable(probes, current_group, wfsmag, gdrmag)) {
+            track_and_print_probes(probes, current_group);
+            return true;
+          } else {
+            return false;
+          }
+
+          /**
           for (int j=0; j<probes.size(); j++) {
             if (probes[j].backward_transfers.size() > 0) {
               transfers.push_back(probes[j].backward_transfers);
@@ -406,6 +430,7 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
 
             return true;
           }
+          **/
         }
       }
     }
@@ -562,42 +587,21 @@ int main(int argc, char *argv[]) {
   probes.push_back(probe3);
   probes.push_back(probe4);
 
-  // cout << "(" << probe4.center.x << ", " << probe4.center.y << ")" << endl;
+  // vector<Star> stars_ = load_stars("Bes/bes.0006.cat");
+  // probe3.backward_transfers = stars_;
+
+  // Point _a(343.6, -213.8);
+  // _a = _a.rotate(5 * (PI / 180));
+  // Star a(_a.x, _a.y, 0, 0);
+
+  // probe3.track(probe2.angle_to_point(_a.rotate(5 * (PI / 180))));
+
+  // cerr << probe3.in_range(a) << endl;
+  // probe3.axis.print("k");
 
   // exit(0);
 
   vector<Star>  stars;
-
-  // Point a(-387.5, 20);
-  // Point b(-500.74, -360.7);
-  // Point c(50.4, -282.3);
-  // Point d(373.6, 0);
-
-  // a.print("red");
-  // b.print("red");
-  // c.print("red");
-  // d.print("red");
-
-  // Star stara(a.x, a.y, 0, 0);
-  // Star starb(b.x, b.y, 0, 0);
-  // Star starc(c.x, c.y, 0, 0);
-  // Star stard(d.x, d.y, 0, 0);
-
-  // vector<Star> pts;
-  // pts.push_back(stara);
-  // pts.push_back(starb);
-  // pts.push_back(starc);
-  // pts.push_back(stard);
-
-  // StarGroup group = StarGroup(pts);
-
-  // transform_and_print(probes, group);
-
-  // Point a(376.5, -23.42);
-  // Star  stara(a.x, a.y, 0, 0);
-  // cout << probe1.distance_till_inrange(stara) << endl;
-
-  // exit(0);
 
   map<string, int>  ValidMagnitudes;
   map<string, bool> CurrentFileValidMagnitudes;
@@ -646,7 +650,7 @@ int main(int argc, char *argv[]) {
       current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
 
       if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, printflg)) {
-        cerr << starfield_files[i] << ": valid" << endl;
+        // cerr << starfield_files[i] << ": valid" << endl;
         valid_files++;
         ostringstream starfile;
         starfile << "starfiles/starfield" << valid_files << ".cat";

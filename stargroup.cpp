@@ -84,42 +84,6 @@ int StarGroup::valid(int W, int G, int printflg) {
   Point origin(0, 1);
   double angle;
 
-  //  if (abs(angle180(stars[0].bear - stars[3].bear)) < 90) {
-  //    if (printflg) {
-  //      for (Star s : stars) { s.print(); }
-  //      cout << "failed 1/4 constraint: angle180(stars[0].bear - stars[3].bear) = " << angle180(stars[0].bear - stars[3].bear) << endl;
-  //    }
-  //    return 0;
-  //  }
-  //  if (angle180(stars[1].bear - stars[0].bear) < 45) {
-  //    if (printflg) {
-  //      for (Star s : stars) { s.print(); }
-  //      cout << "failed 2/1 constraint" << endl;
-  //    }
-  //    return 0;
-  //  }
-  //  if (angle180(stars[2].bear - stars[1].bear) < 45) {
-  //    if (printflg) {
-  //      for (Star s : stars) { s.print(); }
-  //      cout << "failed 3/2 constraint" << endl;
-  //    }
-  //    return 0;
-  //  }
-  //  if (angle180(stars[3].bear - stars[2].bear) < 45) {
-  //    if (printflg) {
-  //      for (Star s : stars) { s.print(); }
-  //      cout << "failed 4/3 constraint" << endl;
-  //    }
-  //    return 0;
-  //  }
-  //
-  //  // cout << "cablemin: " << stars[2].cablemin << ", cablemax: " << stars[1].cablemax << endl;
-  //  if (angle180(stars[2].cablemin - stars[1].cablemax) < 0) {
-  //    for (Star s : stars) { s.print(); }
-  //    cout << "failed cable constraint" << endl;
-  //    return 0;
-  //  }
-
   for (Star s : stars) {
     angles.push_back(angle_between_vectors(origin, s.point()));
   }
