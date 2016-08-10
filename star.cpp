@@ -37,3 +37,10 @@ Star Star::rotate(double dist) {
   Point p = point().rotate(dist);
   return Star(p.x, p.y, r, bear);
 }
+
+bool Star::equals(Star other) {
+  if (x == other.x && y == other.y && r == other.r) {
+    return true;
+  }
+  return false;
+}

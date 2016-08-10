@@ -93,6 +93,30 @@ int colliding(Polygon poly1, Polygon poly2) {
   return res;
 }
 
+int colliding_in_parts(vector<Polygon> probe1parts, vector<Polygon> probe2parts) {
+  for (int i=0; i<probe1parts.size(); i++) {
+    Polygon probe1part = probe1parts[i];
+    for (int j=0; j<probe2parts.size(); j++) {
+      Polygon probe2part = probe2parts[j];
+
+      if (colliding(probe1part, probe2part)) {
+        // cerr << "    collision between probe1part: " << i << ", probe2part: " << j << endl;
+        return 1;
+      }
+    }
+  }
+
+  for (Polygon probe1part : probe1parts) {
+    for (Polygon probe2part : probe2parts) {
+      if (colliding(probe1part, probe2part)) {
+        return 1;
+      }
+    }
+  }
+  
+  return 0;
+}
+
 void transform_and_print(StarGroup group, vector<Probe> probes) {
   //   for (int i=0; i<group.stars.size(); i++) {
   //     probes[i].transform(group.stars[i].point()).polyprint();
@@ -100,16 +124,26 @@ void transform_and_print(StarGroup group, vector<Probe> probes) {
 }
 
 int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
+  Probe probe1 = probes[0];
+  Probe probe2 = probes[probes.size()-1];
+
+  vector<Polygon> probe1parts = probe1.transform_parts(group.stars[0].point());
+  vector<Polygon> probe2parts = probe2.transform_parts(group.stars[group.stars.size()-1].point());
+
+  for (Polygon probe1part : probe1parts) {
+    for (Polygon probe2part : probe2parts) {
+      if (colliding(probe1part, probe2part)) {
+        return 1;
+      }
+    }
+  }
+
   for (int i=0; i<probes.size()-1; i++) {
-    Probe probe1 = probes[i];
-    Probe probe2 = probes[i+1];
+    probe1 = probes[i];
+    probe2 = probes[i+1];
 
-    // cout << "here" << endl;
-
-    vector<Polygon> probe1parts = probe1.transform_parts(group.stars[i].point());
-    vector<Polygon> probe2parts = probe2.transform_parts(group.stars[i+1].point());
-
-    // cout << "and here" << endl;
+    probe1parts = probe1.transform_parts(group.stars[i].point());
+    probe2parts = probe2.transform_parts(group.stars[i+1].point());
 
     for (Polygon probe1part : probe1parts) {
       for (Polygon probe2part : probe2parts) {
@@ -133,6 +167,7 @@ int has_collisions_with_current_stars(vector<Probe> probes) {
   for (Polygon probe1part : probe1parts) {
     for (Polygon probe2part : probe2parts) {
       if (colliding(probe1part, probe2part)) {
+        // cout << "collision between first and last" << endl;
         return 1;
       }
     }

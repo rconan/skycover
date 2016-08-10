@@ -1,6 +1,6 @@
 function iterprobes_tracking(filename, wsize)
 
-    probes = read_polygons(filename, [12 4 4]);
+    probes = read_polygons(filename, [4 8 4 4]);
     
     figure; hold on;
     ylim([-wsize, wsize]);
@@ -25,11 +25,12 @@ function iterprobes_tracking(filename, wsize)
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
         
-    colors = [sgidarkgray; darkgrey; dimgray];
+    colors = [sgidarkgray; darkgrey; dimgray; dimgray]
 
+    size(colors, 2)
     
-    npolygons = 12;
-    nconfigurations = 61;
+    npolygons = 16;
+    nconfigurations = 60;
     probe_handles = double.empty(1, npolygons, 0);
     num_valid_configs = size(probes, 2) / (nconfigurations * npolygons);
     
@@ -37,8 +38,8 @@ function iterprobes_tracking(filename, wsize)
         starfile = sprintf('starfiles/starfield%d.cat', i);
         [starsx, starsy] = readstars(starfile);
         
-        leg = legend(starfile);
-        set(leg, 'FontSize', 16);
+        % leg = legend(starfile);
+        % set(leg, 'FontSize', 16);
         
         for j=1:nconfigurations
             
@@ -48,13 +49,13 @@ function iterprobes_tracking(filename, wsize)
             for k=1:npolygons
                 xcoords = lfilter(@(x) ~isnan(x), probes(offset+k).xs);
                 ycoords = lfilter(@(x) ~isnan(x), probes(offset+k).ys);
-                probe_handles(k) = fill(xcoords, ycoords, colors(mod(k, size(colors,2))+1, :));
+                probe_handles(k) = fill(xcoords, ycoords, colors(mod(k, size(colors,1))+1, :));
             end
             
             [rotatedx, rotatedy] = rotate2dcoord(starsx, starsy, (j-1) * (pi / 180));
             starplot = plot(rotatedx, rotatedy, 'b.', 'markersize', 12);
-
-            pause(0.05);
+           
+            pause(0.03);
         
             if j < nconfigurations
                 for k=1:npolygons

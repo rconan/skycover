@@ -23,6 +23,7 @@ class Star {
   void print();
   Point point();
   Star rotate(double dist);
+  bool equals(Star other);
 };
 
 #endif

@@ -39,6 +39,7 @@ class Probe {
   double angle;
   Point BaffleTubeCtr;
   Point SliderShaftFront;
+  Polygon SliderShaft;
   double distance_tracked;
 
   void add_pt(double _x, double _y);
@@ -59,9 +60,11 @@ class Probe {
   Polygon move_slider(Polygon slider, double theta, Point pivot, double baffle_sep);
   void position_baffle_tube(Point pt);
   void reset_parts();
+  int backtrack(double dist);
 
   bool can_cover(Star s);
   void probe_coverage();
+  vector<Star> used_transfers;
 };
 
 double distance(Point a, Point b);

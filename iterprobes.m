@@ -1,6 +1,6 @@
 function iterprobes(filename, varargin)
 
-    dims = [12 4 4];
+    dims = [4 8 4 4];
     probes = read_polygons(filename, dims);
     
     figure; hold on;
@@ -8,26 +8,47 @@ function iterprobes(filename, varargin)
     xlim([-1500, 1500]);
     axis equal;
 
-    axes = [-0.951057, 0.309017, ...
-            -0.587785, -0.809017, ...
-            0.587785, -0.809017, ...
-            0.951057, 0.309017];
+    axes = [ 0,  1400, ...
+            -1400,  0, ...
+             0, -1400, ...
+             1400,  0];
+        
+    circle(0, 0, 0.1 * 3600, 'k');
+    circle(0, 0, -.167 * 3600, 'k');
         
     for i=1:4
-        plot([0, 3600*axes(i*2-1)], [0, 3600*axes(i*2)], 'r');
+        plot([0, axes(i*2-1)], [0, axes(i*2)], 'k');
     end
 
     darkgrey    = [0.662745, 0.662745, 0.662745];
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
         
-    colors = [sgidarkgray; darkgrey; dimgray];
+    colors = [sgidarkgray; dimgray; darkgrey; dimgray];
 
     npolygons = size(dims, 2) * 4;
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     
+    for i=1:4
+        [x1, y1] = rotate2dcoord(-axes(2*i-1), -axes(2*i), 30 * (pi / 180));
+        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
+        
+        [x2, y2] = rotate2dcoord(-axes(2*i-1), -axes(2*i), -30 * (pi / 180));
+        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
+        
+        % h = fill([axes(2*i-1), axes(2*i-1)+x1, axes(2*i-1)+x2], ...
+        %          [axes(2*i),   axes(2*i)+y1,   axes(2*i)+y2], 'r');
+             
+        % set(h, 'facealpha', 0.5);
+    end
+
+    
     for i=1:nconfigurations
+        starfile = sprintf('starfiles/starfield%d.cat', i);
+        [starsx, starsy] = readstars(starfile);
+        
+        
         offset = (i-1)*npolygons;
         probe_handles = [];
         for j=1:npolygons
@@ -35,18 +56,25 @@ function iterprobes(filename, varargin)
             ycoords = lfilter(@(x) ~isnan(x), probes(offset+j).ys);
             probe_handles(j) = fill(xcoords, ycoords, colors(mod(j, size(colors,2))+1, :));
         end
+        
+        % starplot = plot(starsx, starsy, 'b.', 'markersize', 12);
+            
+    vector(-490.777, -184.844, 'm')
+vector(-415.289, -320.257, 'g')
+
             
     if nargin > 1
         [x, y] = readstars(varargin{1});
         plot(x, y, 'b.', 'markersize', 12);
     end
-        
-        pause(2);
+    
+    pause(0.08);
         
         if i < nconfigurations
             for j=1:npolygons
                 delete(probe_handles(j));
-            end 
+            end
+            % delete(starplot);
         end
     end
 end

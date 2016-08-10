@@ -4,11 +4,12 @@
 #include <math.h>
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 using namespace std;
 
 
 #define PI 3.1415926535
-#define SWEEPANGLE (15 * (PI / 180))
+#define SWEEPANGLE (30 * (PI / 180))
 #define MINRANGE         (0.1   * 3600)
 #define MAXRANGE         (0.167 * 3600)
 
@@ -47,19 +48,13 @@ Polygon get_middle_slider(double angle) {
   MiddleSlider.add_pt(LevelOne.translate(origin, BaseWidthVector));
   MiddleSlider.add_pt(LevelTwo.translate(origin, BaseWidthVector));
 
-  MiddleSlider.add_pt(LevelTwo.translate(origin, TrapBaseWidthVector));
+  // MiddleSlider.add_pt(LevelTwo.translate(origin, TrapBaseWidthVector));
 
   MiddleSlider.add_pt(LevelThree.translate(origin, TrapTopWidthVector));
 
-  MiddleSlider.add_pt(LevelThree.translate(origin, TopRectWidthVector));
-  MiddleSlider.add_pt(LevelFour.translate(origin, TopRectWidthVector));
-  
-  MiddleSlider.add_pt(LevelFour.translate(origin, scale(TopRectWidthVector, -1)));
-  MiddleSlider.add_pt(LevelThree.translate(origin, scale(TopRectWidthVector, -1)));
-
   MiddleSlider.add_pt(LevelThree.translate(origin, scale(TrapTopWidthVector, -1)));
 
-  MiddleSlider.add_pt(LevelTwo.translate(origin, scale(TrapBaseWidthVector, -1)));
+  // MiddleSlider.add_pt(LevelTwo.translate(origin, scale(TrapBaseWidthVector, -1)));
 
   MiddleSlider.add_pt(LevelTwo.translate(origin, scale(BaseWidthVector, -1)));
   MiddleSlider.add_pt(LevelOne.translate(origin, scale(BaseWidthVector, -1)));
@@ -69,6 +64,30 @@ Polygon get_middle_slider(double angle) {
   }
 
   return MiddleSlider;
+}
+
+Polygon get_slider_shaft(double angle) {
+  double toprectwidth  = 150;
+  Point origin(0, 1);
+  Point LevelThree(0, 463.6);
+  Edge  LevelThreeEdge(origin, LevelThree);
+  Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
+  
+  Point LevelFour(0, 115.6);
+
+  Polygon SliderShaft;
+
+  SliderShaft.add_pt(LevelThree.translate(origin, TopRectWidthVector));
+  SliderShaft.add_pt(LevelFour.translate(origin, TopRectWidthVector));
+  
+  SliderShaft.add_pt(LevelFour.translate(origin, scale(TopRectWidthVector, -1)));
+  SliderShaft.add_pt(LevelThree.translate(origin, scale(TopRectWidthVector, -1)));
+
+  for (int i=0; i<SliderShaft.points.size(); i++) {
+    SliderShaft.points[i] = SliderShaft.points[i].rotate(angle * (PI / 180));
+  }
+
+  return SliderShaft;
 }
 
 Polygon get_baffle_tube(double angle) {
@@ -120,12 +139,14 @@ Polygon get_base(double angle) {
 Probe::Probe(double _angle) {
   angle = _angle;
   
-  Slider     = get_middle_slider(angle);
-  BaffleTube = get_baffle_tube(angle);
-  Base       = get_base(angle);
+  Slider      = get_middle_slider(angle);
+  BaffleTube  = get_baffle_tube(angle);
+  Base        = get_base(angle);
+  SliderShaft = get_slider_shaft(angle);
 
   parts.push_back(Slider);
   parts.push_back(BaffleTube);
+  parts.push_back(SliderShaft);
 
   start_distance_from_center = 115.6;
   SliderShaftFront = Point(0, 115.6).rotate(angle * (PI / 180));
@@ -347,10 +368,7 @@ Polygon Probe::move_slider(Polygon slider, double theta, Point pivot, double baf
   Point v = Point(pivot.x - w.x, pivot.y - w.y);
 
   int mod = 1;
-  // w.print("m");
   if (distance(w, center) < distance(pivot, center)) {
-    // w.print("g");
-    // u.print("m");
     mod = -1;
   }
 
@@ -392,8 +410,11 @@ void Probe::reset_parts() {
   Slider     = get_middle_slider(angle);
   BaffleTube = get_baffle_tube(angle);
 
+  parts.clear();
+
   parts.push_back(Slider);
   parts.push_back(BaffleTube);
+  parts.push_back(SliderShaft);
 }
 
 vector<Polygon> Probe::transform_parts(Point pivot) {
@@ -403,7 +424,6 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
   double dist_star_from_center   = distance(pivot, origin);
   double dist_slider_from_center = dist_star_from_center + baffle_separation(pivot);
 
-  // move_slider(dist_slider_from_center);
   position_baffle_tube(pivot);
 
   double theta = angle_to_point(pivot);
@@ -417,6 +437,7 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
   }
 
   transformed_parts[0] = move_slider(transformed_parts[0], theta, pivot, baffle_separation(pivot));
+  transformed_parts[2] = move_slider(transformed_parts[2], theta, pivot, baffle_separation(pivot));
 
   reset_parts();
 
@@ -554,11 +575,12 @@ void sort_by_transfer_distance(vector<Star>& stars, int p, int q, Point center, 
 int Probe::track(double dist) {
   if (! in_range(base_star.rotate(dist))) {
 
-   sort_by_transfer_distance(backward_transfers, 0, backward_transfers.size(), center, current_star);
+    sort_by_transfer_distance(backward_transfers, 0, backward_transfers.size(), center, current_star);
 
     bool found = false;
-    for (Star s : backward_transfers) {
-      // s.rotate(dist).point().print("r");
+    for (int i=0; i<backward_transfers.size(); i++) {
+      Star s = backward_transfers[i];
+
       if (in_range(s.rotate(dist))) {
         found = true;
         base_star = s;
@@ -661,5 +683,58 @@ void Probe::get_backward_transfers(vector<Star> stars, double track_dist, double
     if (s.r <= maglim) {
       backward_transfers.push_back(s);
     }
+  }
+}
+
+vector<Star>::iterator find_star(vector<Star> starlist, Star s) {
+  vector<Star>::iterator curr;
+  for (curr=starlist.begin(); curr!=starlist.end(); curr++) {
+    if (s.x == curr->x && s.y == curr->y && s.r == curr->r) {
+      return curr;
+    }
+  }
+
+  return curr;
+}
+
+bool in(vector<Star> list, Star s) {
+  for (Star el : list) {
+    if (s.equals(el)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+int Probe::backtrack(double dist) {
+  sort_by_transfer_distance(backward_transfers, 0, backward_transfers.size(), center, current_star);
+
+  bool found = false;
+  for (int i=0; i<backward_transfers.size(); i++) {
+    Star s = backward_transfers[i];
+
+    if (in(used_transfers, s)) {
+      continue;
+    }
+
+    if (in_range(s.rotate(dist))) {
+      found = true;
+      base_star = s;
+      // base_star.point().print("m");
+      current_star  = base_star.rotate(dist);
+
+      used_transfers.push_back(s);
+
+      // current_star.point().print("g");
+
+      break;
+    }
+  }
+
+  if (found == false) {
+    return -1;
+  } else {
+    return 0;
   }
 }
