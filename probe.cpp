@@ -13,7 +13,6 @@ using namespace std;
 #define MINRANGE         (0.1   * 3600)
 #define MAXRANGE         (0.167 * 3600)
 
-// Scale a vector v by magnitude m.
 Point scale(Point v, double m) {
   Point scaled(v.x * m, v.y * m);
   return scaled;
@@ -21,12 +20,12 @@ Point scale(Point v, double m) {
 
 Probe::Probe() { }
 
-Polygon get_middle_slider(double angle) {
+Polygon get_middle_slider(double angle, double padding) {
   Point origin(0, 0);
-  double basewidth     = 660;
-  double trapbasewidth = 600;
-  double traptopwidth  = 397.5;
-  double toprectwidth  = 150;
+  double basewidth     = 660 + padding;
+  double trapbasewidth = 600 + padding;
+  double traptopwidth  = 397.5 + padding;
+  double toprectwidth  = 150 + padding;
   
 
   Point LevelOne(0, 1400);
@@ -38,11 +37,11 @@ Polygon get_middle_slider(double angle) {
   Point TrapBaseWidthVector = scale(LevelTwoEdge.normal(), trapbasewidth/2);
   Point TrapTopWidthVector  = scale(LevelTwoEdge.normal(), traptopwidth/2);
 
-  Point LevelThree(0, 463.6);
+  Point LevelThree(0, 463.6 - padding);
   Edge  LevelThreeEdge(origin, LevelThree);
   Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
   
-  Point LevelFour(0, 115.6);
+  Point LevelFour(0, 115.6 - padding);
 
   Polygon MiddleSlider;
   MiddleSlider.add_pt(LevelOne.translate(origin, BaseWidthVector));
@@ -66,14 +65,14 @@ Polygon get_middle_slider(double angle) {
   return MiddleSlider;
 }
 
-Polygon get_slider_shaft(double angle) {
-  double toprectwidth  = 150;
+Polygon get_slider_shaft(double angle, double padding) {
+  double toprectwidth  = 150 + padding;
   Point origin(0, 1);
-  Point LevelThree(0, 463.6);
+  Point LevelThree(0, 463.6 - padding);
   Edge  LevelThreeEdge(origin, LevelThree);
   Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
   
-  Point LevelFour(0, 115.6);
+  Point LevelFour(0, 115.6 - padding);
 
   Polygon SliderShaft;
 
@@ -90,11 +89,11 @@ Polygon get_slider_shaft(double angle) {
   return SliderShaft;
 }
 
-Polygon get_baffle_tube(double angle) {
-  double bafflewidth = 145;
+Polygon get_baffle_tube(double angle, double padding) {
+  double bafflewidth = 145 + padding;
   
   Point origin(0, 0);
-  Point LevelOne(0, 474);
+  Point LevelOne(0, 474 + padding);
   Point LevelTwo(0, -76);
 
   Edge  BaffleTubeEdge(origin, LevelOne);
@@ -111,6 +110,29 @@ Polygon get_baffle_tube(double angle) {
   }
 
   return BaffleTube;
+}
+
+Polygon get_obscuration(double padding) {
+  double width = 496 + padding;
+
+  Point origin(0, 0);
+  Point LevelOne(0, 1400 + padding);
+  Point LevelTwo(0, -264);
+
+  Edge  ObscurationEdge(origin, LevelOne);
+  Point ObscurationWidthVector(scale(ObscurationEdge.normal(), width/2));
+
+  Polygon Obscuration;
+  Obscuration.add_pt(LevelOne.translate(origin, ObscurationWidthVector));
+  Obscuration.add_pt(LevelTwo.translate(origin, ObscurationWidthVector));
+  Obscuration.add_pt(LevelTwo.translate(origin, scale(ObscurationWidthVector, -1)));
+  Obscuration.add_pt(LevelOne.translate(origin, scale(ObscurationWidthVector, -1)));
+
+  for (int i=0; i<Obscuration.points.size(); i++) {
+    Obscuration.points[i] = Obscuration.points[i].rotate(22.5 * (PI / 180));
+  }
+
+  return Obscuration;
 }
 
 Polygon get_base(double angle) {
@@ -138,11 +160,12 @@ Polygon get_base(double angle) {
 
 Probe::Probe(double _angle) {
   angle = _angle;
+  padding = 10;
   
-  Slider      = get_middle_slider(angle);
-  BaffleTube  = get_baffle_tube(angle);
+  Slider      = get_middle_slider(angle, padding);
+  BaffleTube  = get_baffle_tube(angle, padding);
   Base        = get_base(angle);
-  SliderShaft = get_slider_shaft(angle);
+  SliderShaft = get_slider_shaft(angle, padding);
 
   parts.push_back(Slider);
   parts.push_back(BaffleTube);
@@ -407,8 +430,9 @@ void Probe::position_baffle_tube(Point pt) {
 }
 
 void Probe::reset_parts() {
-  Slider     = get_middle_slider(angle);
-  BaffleTube = get_baffle_tube(angle);
+  Slider     = get_middle_slider(angle, padding);
+  BaffleTube = get_baffle_tube(angle, padding);
+  SliderShaft = get_slider_shaft(angle, padding);
 
   parts.clear();
 

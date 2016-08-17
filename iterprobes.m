@@ -1,6 +1,6 @@
 function iterprobes(filename, varargin)
 
-    dims = [4 8 4 4];
+    dims = [4 6 4 4 4];
     probes = read_polygons(filename, dims);
     
     figure; hold on;
@@ -26,7 +26,7 @@ function iterprobes(filename, varargin)
         
     colors = [sgidarkgray; dimgray; darkgrey; dimgray];
 
-    npolygons = size(dims, 2) * 4;
+    npolygons = 17;
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     
@@ -59,16 +59,12 @@ function iterprobes(filename, varargin)
         
         % starplot = plot(starsx, starsy, 'b.', 'markersize', 12);
             
-    vector(-490.777, -184.844, 'm')
-vector(-415.289, -320.257, 'g')
-
-            
     if nargin > 1
         [x, y] = readstars(varargin{1});
         plot(x, y, 'b.', 'markersize', 12);
     end
     
-    pause(0.08);
+    pause(0.15);
         
         if i < nconfigurations
             for j=1:npolygons

@@ -22,6 +22,7 @@ using namespace std;
 #define MAXRANGE         (0.167 * 3600)
 #define MINIMUMTRACK     (60 * (PI / 180))
 #define MINIMUMTRACK_DEG 60
+#define USE_OBSCURATION  1
 
 std::vector<std::string> split(const std::string &text, char sep) {
     std::vector<std::string> tokens;
@@ -228,76 +229,10 @@ void print_with_current_stars(vector<Probe> probes) {
     transformed_parts[2].polyprint();
     probes[i].Base.polyprint();
   }
+
+  get_obscuration(0).polyprint();
 }
 
-bool collisions_while_tracking(vector<Probe> probes, StarGroup group) {
-  for (int k=0; k<probes.size(); k++) {
-    probes[k].current_star = group.stars[k];
-    probes[k].base_star    = group.stars[k];
-    probes[k].backward_transfer_idx = 0;
-  }
-
-
-    for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
-      for (int j=0; j<probes.size(); j++) {
-        probes[j].track(i * (PI / 180));
-        if (has_collisions_with_current_stars(probes)) {
-
-          // print_with_current_stars(probes);
-          // for (Probe p : probes) {
-          //   p.current_star.point().print("g");
-          // }
-
-          return true;
-        }
-      }
-    }
-
-    return false;
-
-  /**
-  vector<int> list_sizes;
-  for (Probe p : probes) {
-    list_sizes.push_back(p.backward_transfers.size());
-  }
-
-  CombinationGenerator transfer_combos = CombinationGenerator(list_sizes);
-
-  while (!transfer_combos.done) {
-    vector<int> indices = transfer_combos.next();
-    for (int i=0; i<probes.size(); i++) {
-      probes[i].backward_transfer_idx = indices[i];
-    }
-
-    bool collisions = false;
-
-    for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
-      for (int j=0; j<probes.size(); j++) {
-        probes[j].track(i * (PI / 180));
-        if (has_collisions_with_current_stars(probes)) {
-
-          // print_with_current_stars(probes);
-          // for (Probe p : probes) {
-          //   p.current_star.point().print("g");
-          // }
-
-          collisions = true;
-          break;
-        }
-      }
-      if (collisions == true) {
-        break;
-      }
-    }
-
-    if (collisions == false) {
-      return false;
-    }
-  }
-
-  return true;
-  **/
-}
 
 bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
   for (int k=0; k<probes.size(); k++) {
@@ -309,8 +244,6 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
   bool nobacktrack = false;
 
   for (int i=0; i<MINIMUMTRACK_DEG; i++) {
-    // probes[2].base_star.point().print("g");
-    // probes[2].current_star.point().print("g");
     for (int j=0; j<probes.size(); j++) {
       probes[j].track(i * (PI / 180));
       probes[j].used_transfers.clear();
@@ -318,9 +251,9 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
         return false;
       }
     }
-    // print_with_current_stars(probes);
 
-    while (has_collisions_with_current_stars(probes)) {
+
+    while (has_collisions_with_current_stars(probes, USE_OBSCURATION)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -330,25 +263,18 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
       }
 
       for (int k=0; k<probes.size()-1; k++) {
-        // cerr << "checking probes " << k << " and " << (k+1) << endl;
-
-        // if (k == 2) {
-        //   probes[2].base_star.point().print("g");
-        //   probes[2].current_star.point().print("g");
-        //   cerr << endl;
-        // }
-
-        // cerr << "checking probes " << k << " and " << (k+1) << endl;
         if (colliding_in_parts(probes[k].transform_parts(probes[k].current_star.point()),
                                probes[k+1].transform_parts(probes[k+1].current_star.point()))) {
-          // if (k == 2) {
-          //   probes[k].current_star.point().print("g");
-          //   probes[k+1].current_star.point().print("m");
-          // }
-          // cerr << "found collision between probes " << k << " and " << (k+1) << endl;
-
           if (probes[k].backtrack(i * (PI / 180)) == -1) {
-            // cerr << "    couldn't resolve backtrack for probe " << k << endl;
+            nobacktrack = true;
+            break;
+          }
+        }
+      }
+
+      for (int l=0; l<probes.size(); l++) {
+        if (obscured(probes[l].current_star)) {
+          if (probes[l].backtrack(i * (PI / 180)) == -1) {
             nobacktrack = true;
             break;
           }
@@ -357,8 +283,6 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
 
       if (nobacktrack) { break; }
     }
-
-
   }
 
   if (nobacktrack) {
@@ -367,39 +291,6 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
     return true;
   }
 }
-
-/**
-bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
-  for (int k=0; k<probes.size(); k++) {
-    probes[k].current_star = group.stars[k];
-    probes[k].base_star    = group.stars[k];
-    probes[k].backward_transfer_idx = 0;
-  }
-
-  for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
-    for (int l=0; l<probes.size(); l++) {
-      if (probes[l].track(i * (PI / 180)) == -1) {
-        return false;
-      }
-    }
-  }
-
-  for (int j=0; j<probes.size(); j++) {
-    if (probes[j].track(MINIMUMTRACK) == -1) {
-      return false;
-    }
-    if (probes[j].distance_tracked < MINIMUMTRACK) {
-      return false;
-    }
-  }
-
-    if (collisions_while_tracking(probes, group)) {
-      return false;
-    }
-
-  return true;
-}
-**/
 
 void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<Star> stars, int wfsmag, int gdrmag) {
   for (int i=0; i<probes.size(); i++) {
@@ -421,6 +312,8 @@ void transform_and_print(vector<Probe> probes, StarGroup group) {
     transformed_parts[2].polyprint();
     probes[i].Base.polyprint();
   }
+
+  get_obscuration(0).polyprint();
 }
 
 void track_and_print_probes(vector<Probe> probes, StarGroup group) {
@@ -441,7 +334,7 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
     }
     // print_with_current_stars(probes);
 
-    while (has_collisions_with_current_stars(probes)) {
+    while (has_collisions_with_current_stars(probes, USE_OBSCURATION)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -451,25 +344,20 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
       }
 
       for (int k=0; k<probes.size()-1; k++) {
-        // cerr << "checking probes " << k << " and " << (k+1) << endl;
 
-        // if (k == 2) {
-        //   probes[2].base_star.point().print("g");
-        //   probes[2].current_star.point().print("g");
-        //   cerr << endl;
-        // }
-
-        // cerr << "checking probes " << k << " and " << (k+1) << endl;
         if (colliding_in_parts(probes[k].transform_parts(probes[k].current_star.point()),
                                probes[k+1].transform_parts(probes[k+1].current_star.point()))) {
-          // if (k == 2) {
-          //   probes[k].current_star.point().print("g");
-          //   probes[k+1].current_star.point().print("m");
-          // }
-          // cerr << "found collision between probes " << k << " and " << (k+1) << endl;
 
           if (probes[k].backtrack(i * (PI / 180)) == -1) {
-            // cerr << "    couldn't resolve backtrack for probe " << k << endl;
+            nobacktrack = true;
+            break;
+          }
+        }
+      }
+
+      for (int l=0; l<probes.size(); l++) {
+        if (obscured(probes[l].current_star)) {
+          if (probes[l].backtrack(i * (PI / 180)) == -1) {
             nobacktrack = true;
             break;
           }
@@ -529,6 +417,7 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
         p.needs_transfer = false;
       }
 
+
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
       for (int i=0; i<probes.size(); i++) {
@@ -542,7 +431,7 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
         // transform_and_print(probes, current_group);
         // exit(0);
 
-        if ( !has_collisions_in_parts(current_group, probes) ) {
+        if ( !has_collisions_in_parts(current_group, probes, USE_OBSCURATION) ) {
 
           // transform_and_print(probes, current_group);
           // return true;
@@ -554,6 +443,7 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
               return false;
             }
           }
+
 
           if (trackable(probes, current_group, wfsmag, gdrmag)) {
             track_and_print_probes(probes, current_group);
@@ -716,20 +606,6 @@ int main(int argc, char *argv[]) {
   probes.push_back(probe2);
   probes.push_back(probe3);
   probes.push_back(probe4);
-
-  // vector<Star> stars_ = load_stars("Bes/bes.0006.cat");
-  // probe3.backward_transfers = stars_;
-
-  // Point _a(343.6, -213.8);
-  // _a = _a.rotate(5 * (PI / 180));
-  // Star a(_a.x, _a.y, 0, 0);
-
-  // probe3.track(probe2.angle_to_point(_a.rotate(5 * (PI / 180))));
-
-  // cerr << probe3.in_range(a) << endl;
-  // probe3.axis.print("k");
-
-  // exit(0);
 
   vector<Star>  stars;
 

@@ -1,6 +1,6 @@
 function iterprobes_tracking(filename, wsize)
 
-    probes = read_polygons(filename, [4 8 4 4]);
+    probes = read_polygons(filename, [4 6 4 4 4]);
     
     figure; hold on;
     ylim([-wsize, wsize]);
@@ -9,10 +9,10 @@ function iterprobes_tracking(filename, wsize)
     plot(0, 0);
     grid on;
     
-    axes = [ 0,  1, ...
-            -1,  0, ...
-             0, -1, ...
-             1,  0];
+    axes = [ 0,  1400, ...
+            -1400,  0, ...
+             0, -1400, ...
+             1400,  0];
          
     circle(0, 0, 0.1 * 3600, 'k');
     circle(0, 0, -.167 * 3600, 'k');
@@ -20,16 +20,27 @@ function iterprobes_tracking(filename, wsize)
     for i=1:4
         plot([0, 3600*axes(i*2-1)], [0, 3600*axes(i*2)], 'k');
     end
+    
+    for i=1:4
+        [x1, y1] = rotate2dcoord(-axes(2*i-1), -axes(2*i), 30 * (pi / 180));
+        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
+        
+        [x2, y2] = rotate2dcoord(-axes(2*i-1), -axes(2*i), -30 * (pi / 180));
+        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
+        
+        % h = fill([axes(2*i-1), axes(2*i-1)+x1, axes(2*i-1)+x2], ...
+        %          [axes(2*i),   axes(2*i)+y1,   axes(2*i)+y2], 'r');
+             
+        % set(h, 'facealpha', 0.5);
+    end
 
     darkgrey    = [0.662745, 0.662745, 0.662745];
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
         
-    colors = [sgidarkgray; darkgrey; dimgray; dimgray]
-
-    size(colors, 2)
+    colors = [sgidarkgray; darkgrey; dimgray; dimgray];
     
-    npolygons = 16;
+    npolygons = 17;
     nconfigurations = 60;
     probe_handles = double.empty(1, npolygons, 0);
     num_valid_configs = size(probes, 2) / (nconfigurations * npolygons);

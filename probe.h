@@ -41,6 +41,7 @@ class Probe {
   Point SliderShaftFront;
   Polygon SliderShaft;
   double distance_tracked;
+  double padding;
 
   void add_pt(double _x, double _y);
   void add_pt(Point pt);
@@ -74,5 +75,6 @@ vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1);
 Point scale(Point u, double m);
 Polygon graham_scan(vector<Polygon> polygons);
 bool safe_distance_from_center(Star s);
+Polygon get_obscuration(double padding);
 
 #endif

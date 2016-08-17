@@ -117,13 +117,16 @@ int colliding_in_parts(vector<Polygon> probe1parts, vector<Polygon> probe2parts)
   return 0;
 }
 
-void transform_and_print(StarGroup group, vector<Probe> probes) {
-  //   for (int i=0; i<group.stars.size(); i++) {
-  //     probes[i].transform(group.stars[i].point()).polyprint();
-  //   }
+bool obscured(Star s) {
+  Polygon obscuration = get_obscuration(0);
+  if (obscuration.point_in_poly(s.point())) {
+    return true;
+  }
+
+  return false;
 }
 
-int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
+int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int use_obscuration) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
 
@@ -133,6 +136,14 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
   for (Polygon probe1part : probe1parts) {
     for (Polygon probe2part : probe2parts) {
       if (colliding(probe1part, probe2part)) {
+        return 1;
+      }
+    }
+  }
+
+  if (use_obscuration) {
+    for (int i=0; i<group.stars.size(); i++) {
+      if (obscured(group.stars[i])) {
         return 1;
       }
     }
@@ -157,7 +168,7 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes) {
   return 0;
 }
 
-int has_collisions_with_current_stars(vector<Probe> probes) {
+int has_collisions_with_current_stars(vector<Probe> probes, int use_obscuration) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
 
@@ -168,6 +179,14 @@ int has_collisions_with_current_stars(vector<Probe> probes) {
     for (Polygon probe2part : probe2parts) {
       if (colliding(probe1part, probe2part)) {
         // cout << "collision between first and last" << endl;
+        return 1;
+      }
+    }
+  }
+
+  if (use_obscuration) {
+    for (int i=0; i<probes.size(); i++) {
+      if (obscured(probes[i].current_star)) {
         return 1;
       }
     }
@@ -191,6 +210,7 @@ int has_collisions_with_current_stars(vector<Probe> probes) {
 
   return 0;
 }
+
 int has_collisions(StarGroup group, vector<Probe> probes) {
   vector<Polygon> polygons;
   Probe prb;
