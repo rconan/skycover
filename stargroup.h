@@ -14,7 +14,7 @@ class StarGroup {
   vector<Star> stars;
   vector<int>   mags;
 
-  void add_star(Star *_star);
+  void add_star(Star _star);
   Star star_at(int idx);
   void update_mags();
   string magpair();

@@ -118,7 +118,7 @@ int colliding_in_parts(vector<Polygon> probe1parts, vector<Polygon> probe2parts)
 }
 
 bool obscured(Star s) {
-  Polygon obscuration = get_obscuration(0);
+  Polygon obscuration = get_m3_obscuration(0);
   if (obscuration.point_in_poly(s.point())) {
     return true;
   }
@@ -126,7 +126,7 @@ bool obscured(Star s) {
   return false;
 }
 
-int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int use_obscuration) {
+int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int use_obscuration, int max_obscured) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
 
@@ -141,12 +141,17 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int use_obscu
     }
   }
 
+  int obscured_probes = 0;
   if (use_obscuration) {
     for (int i=0; i<group.stars.size(); i++) {
       if (obscured(group.stars[i])) {
-        return 1;
+        obscured_probes++;
       }
     }
+  }
+
+  if (obscured_probes > max_obscured) {
+    return 1;
   }
 
   for (int i=0; i<probes.size()-1; i++) {

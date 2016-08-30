@@ -112,7 +112,7 @@ Polygon get_baffle_tube(double angle, double padding) {
   return BaffleTube;
 }
 
-Polygon get_obscuration(double padding) {
+Polygon get_gclef_obscuration(double padding) {
   double width = 496 + padding;
 
   Point origin(0, 0);
@@ -130,6 +130,31 @@ Polygon get_obscuration(double padding) {
 
   for (int i=0; i<Obscuration.points.size(); i++) {
     Obscuration.points[i] = Obscuration.points[i].rotate(22.5 * (PI / 180));
+  }
+
+  return Obscuration;
+}
+
+Polygon get_m3_obscuration(double padding) {
+  double levelonewidth = 601.93;
+  double leveltwowidth = 80;
+
+  Point origin(0, 0);
+  Point LevelOne(0, 1200 + padding);
+  Point LevelTwo(0, 96.75);
+
+  Edge ObscurationEdge(origin, LevelOne);
+  Point ObscurationWidthVectorA(scale(ObscurationEdge.normal(), levelonewidth/2));
+  Point ObscurationWidthVectorB(scale(ObscurationEdge.normal(), leveltwowidth/2));
+
+  Polygon Obscuration;
+  Obscuration.add_pt(LevelOne.translate(origin, ObscurationWidthVectorA));
+  Obscuration.add_pt(LevelTwo.translate(origin, ObscurationWidthVectorB));
+  Obscuration.add_pt(LevelTwo.translate(origin, scale(ObscurationWidthVectorB, -1)));
+  Obscuration.add_pt(LevelOne.translate(origin, scale(ObscurationWidthVectorA, -1)));
+
+  for (int i=0; i<Obscuration.points.size(); i++) {
+    Obscuration.points[i] = Obscuration.points[i].rotate(-28 * (PI / 180));
   }
 
   return Obscuration;

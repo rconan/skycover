@@ -30,7 +30,7 @@ Point Star::point() {
 }
 
 void Star::print() {
-  printf("x: %f, y: %f, r: %f\n", pt.x, pt.y, r);
+  fprintf(stderr, "x: %f, y: %f, r: %f\n", pt.x, pt.y, r);
 }
 
 Star Star::rotate(double dist) {

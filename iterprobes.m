@@ -1,6 +1,6 @@
 function iterprobes(filename, varargin)
 
-    dims = [4 6 4 4 4];
+    dims = [4 6 4 4];
     probes = read_polygons(filename, dims);
     
     figure; hold on;
@@ -45,8 +45,8 @@ function iterprobes(filename, varargin)
 
     
     for i=1:nconfigurations
-        starfile = sprintf('starfiles/starfield%d.cat', i);
-        [starsx, starsy] = readstars(starfile);
+        % starfile = sprintf('starfiles/starfield%d_invalid.cat', i);
+        % [starsx, starsy] = readstars(starfile);
         
         
         offset = (i-1)*npolygons;
@@ -54,7 +54,7 @@ function iterprobes(filename, varargin)
         for j=1:npolygons
             xcoords = lfilter(@(x) ~isnan(x), probes(offset+j).xs);
             ycoords = lfilter(@(x) ~isnan(x), probes(offset+j).ys);
-            probe_handles(j) = fill(xcoords, ycoords, colors(mod(j, size(colors,2))+1, :));
+            probe_handles(j) = fill(xcoords, ycoords, colors(mod(j, size(colors,1))+1, :));
         end
         
         % starplot = plot(starsx, starsy, 'b.', 'markersize', 12);
@@ -64,7 +64,7 @@ function iterprobes(filename, varargin)
         plot(x, y, 'b.', 'markersize', 12);
     end
     
-    pause(0.15);
+    pause(1.5);
         
         if i < nconfigurations
             for j=1:npolygons

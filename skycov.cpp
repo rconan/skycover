@@ -23,6 +23,7 @@ using namespace std;
 #define MINIMUMTRACK     (60 * (PI / 180))
 #define MINIMUMTRACK_DEG 60
 #define USE_OBSCURATION  1
+#define MAX_OBSCURED     1
 
 std::vector<std::string> split(const std::string &text, char sep) {
     std::vector<std::string> tokens;
@@ -230,7 +231,7 @@ void print_with_current_stars(vector<Probe> probes) {
     probes[i].Base.polyprint();
   }
 
-  get_obscuration(0).polyprint();
+  get_m3_obscuration(0).polyprint();
 }
 
 
@@ -313,7 +314,7 @@ void transform_and_print(vector<Probe> probes, StarGroup group) {
     probes[i].Base.polyprint();
   }
 
-  get_obscuration(0).polyprint();
+  get_m3_obscuration(0).polyprint();
 }
 
 void track_and_print_probes(vector<Probe> probes, StarGroup group) {
@@ -371,30 +372,31 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
   }
 }
 
-/**
-void track_and_print_probes(vector<Probe> probes, StarGroup group) {
-  for (int k=0; k<probes.size(); k++) {
-    probes[k].current_star = group.stars[k];
-    probes[k].base_star    = group.stars[k];
-  }
-
-  for (int i=0; i<=MINIMUMTRACK_DEG; i++) {
-    for (int j=0; j<probes.size(); j++) {
-      probes[j].track(i * (PI / 180));
-
-      vector<Polygon> transformed_parts = probes[j].transform_parts(probes[j].current_star.point());
-
-      transformed_parts[1].polyprint();
-      transformed_parts[0].polyprint();
-      transformed_parts[2].polyprint();
-      probes[j].Base.polyprint();
-    }
-  }
-}
-**/
-
 void here() {
   cout << "here" << endl;
+}
+
+int has_empty_bin(vector< vector<Star> > bins) {
+  int emptybins = 0;
+  for (vector<Star> bin : bins) {
+    if (bin.size() == 0) {
+      emptybins++;
+    }
+  }
+
+  return emptybins;
+}
+
+int get_empty_idx(vector< vector<Star> > bins) {
+  int idx = -1;
+  for (int i=0; i<bins.size(); i++) {
+    if (bins[i].size() == 0) {
+      idx = i;
+      break;
+    }
+  }
+
+  return idx;
 }
 
 bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag, int printflg) {
@@ -403,12 +405,18 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
     StarGroup current_group;
     map<string, bool> valid_mags_map;
 
+    for (int i=0; i<probestars.size(); i++) {
+      probestars[i].push_back(probes[i].default_star);
+    }
+
     CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
 
     vector< vector<Star> > transfers;
     vector<int> probes_with_transfers;
 
     int count = 0;
+
+    // cerr << "already done: " << stargroups.done << endl;
 
     while ( !stargroups.done ) {
       transfers.clear();
@@ -417,7 +425,6 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
         p.needs_transfer = false;
       }
 
-
       current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
       for (int i=0; i<probes.size(); i++) {
@@ -425,16 +432,23 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
         probes[i].current_star = current_group.stars[i];
       }
 
-      
+      // if (emptyidx != -1) {
+      //   current_group.add_star(probes[emptyidx].default_star);
+      // }
+
+      // transform_and_print(probes, current_group);
+
       if (current_group.valid(wfsmag, gdrmag, 0)) {
+
+        // current_group.stars[1].print();
 
         // transform_and_print(probes, current_group);
         // exit(0);
 
-        if ( !has_collisions_in_parts(current_group, probes, USE_OBSCURATION) ) {
+        if ( !has_collisions_in_parts(current_group, probes, USE_OBSCURATION, MAX_OBSCURED) ) {
 
           // transform_and_print(probes, current_group);
-          // return true;
+          return true;
 
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
 
@@ -446,7 +460,7 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
 
 
           if (trackable(probes, current_group, wfsmag, gdrmag)) {
-            track_and_print_probes(probes, current_group);
+            // track_and_print_probes(probes, current_group);
             return true;
           } else {
             return false;
@@ -476,12 +490,10 @@ vector<Star> load_stars(string filename) {
             smatch match;
             regex bear_regex("([0-9]+):([0-9]+):([0-9]+)");
             if (regex_match(tokens[3], match, bear_regex)) {
-              // cout << "translating " << tokens[3] << " into ";
               int degrees = stoi(match.str(1));
               int minutes = stoi(match.str(2));
               double seconds = stod(match.str(3));
               bear = degrees + ( (minutes + (seconds / 60)) / 60);
-              // cout << bear << endl;
             }
 
             stars.push_back(Star(x, y, r, bear));
@@ -593,11 +605,43 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   fout.close();
 }
 
+vector<Probe> probes_except(vector<Probe> probes, int idx) {
+  vector<Probe> res;
+  for (int i=0; i<probes.size(); i++) {
+    if (i != idx) {
+      res.push_back(probes[i]);
+    }
+  }
+
+  return res;
+}
+
+vector< vector<Star> > filter_empty_bin(vector< vector<Star> > bin) {
+  vector< vector<Star> > res;
+  for (int i=0; i<bin.size(); i++) {
+    if (bin[i].size() != 0) {
+      res.push_back(bin[i]);
+    }
+  }
+
+  return res;
+}
+
 int main(int argc, char *argv[]) {
   Probe probe1(0);
   Probe probe2(90);
   Probe probe3(180);
   Probe probe4(-90);
+
+  Star probe1default(0, 1000, 20, 0);
+  Star probe2default(-1000, 0, 20, 0);
+  Star probe3default(0, -1000, 20, 0);
+  Star probe4default(1000, 0, 20, 0);
+
+  probe1.default_star = probe1default;
+  probe2.default_star = probe2default;
+  probe3.default_star = probe3default;
+  probe4.default_star = probe4default;
 
   Point origin(0, 0);
 
@@ -620,7 +664,7 @@ int main(int argc, char *argv[]) {
     file_regex = ".*";
   } else {
     wfsmag = atoi(argv[1]);
-    gdrmag = atoi(argv[2]);
+    gdrmag = atoi(argv[1]);
     nfiles = atoi(argv[3]);
   }
 
@@ -636,7 +680,12 @@ int main(int argc, char *argv[]) {
     cerr << "Processing file " << starfield_files[stoi(argv[4])-1] << endl;
     stars = load_stars(starfield_files[stoi(argv[4])-1]);
 
+
     probestars = get_probe_stars(stars, probes);
+    // for (Star s : probestars[1]) {
+    //  s.print();
+    // }
+    // cerr << "binning" << endl;
     current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
 
     if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, 0)) {
@@ -646,7 +695,7 @@ int main(int argc, char *argv[]) {
     }
 
     ostringstream starfile;
-    write_stars(stars, "starfiles/starfield1.cat", wfsmag, gdrmag);
+    write_stars(stars, "starfiles_m3/starfield1.cat", wfsmag, gdrmag);
   } else {
     for (int i=0; i<nfiles; i++) {
       // cerr << "Processing file " << starfield_files[i] << ": ";
@@ -656,15 +705,19 @@ int main(int argc, char *argv[]) {
       current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
 
       if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, printflg)) {
-        // cerr << starfield_files[i] << ": valid" << endl;
         valid_files++;
         ostringstream starfile;
-        starfile << "starfiles/starfield" << valid_files << ".cat";
+        starfile << "starfiles_m3/starfield" << (i+1) << ".cat";
+        write_stars(stars, starfile.str(), wfsmag, gdrmag);
+      } else {
+        ostringstream starfile;
+        starfile << "starfiles_m3/starfield" << (i+1) << "_invalid.cat";
         write_stars(stars, starfile.str(), wfsmag, gdrmag);
       }
     }
   }
-  cerr << valid_files / nfiles << endl;
+
+  cout << valid_files / nfiles << endl;
 
 
   return 0;

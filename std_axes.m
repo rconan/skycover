@@ -1,8 +1,8 @@
-function std_axes()
+function std_axes(minx, maxx, miny, maxy)
 
     figure; hold on;
-    ylim([-1, 1]);
-    xlim([-1, 1]);
-    axis equal;
+    ylim([miny, maxy]);
+    xlim([minx, maxx]);
+    grid on;
 
 end

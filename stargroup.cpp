@@ -16,8 +16,8 @@ StarGroup::StarGroup(vector<Star> _stars) {
     update_mags();
 }
 
-void StarGroup::add_star(Star *_star) {
-  stars.push_back(*_star);
+void StarGroup::add_star(Star _star) {
+  stars.push_back(_star);
 }
 
 Star StarGroup::star_at(int idx) {
@@ -84,9 +84,15 @@ int StarGroup::valid(int W, int G, int printflg) {
   Point origin(0, 1);
   double angle;
 
+  // stars[1].print();
+  // stars[2].print();
+
   for (Star s : stars) {
-    angles.push_back(angle_between_vectors(origin, s.point()));
+    angles.push_back(abs(angle_between_vectors(origin, s.point())));
   }
+
+  // cerr << "angles[1]L " << angles[1] << ", angles[2]: " << angles[2] << endl;
+  // cerr << "angle check: " << (angles[1] > angles[2]) << endl;
 
   if (quadrant(stars[0].point()) == 2 && quadrant(stars[3].point()) == 2) {if (angles[0] < angles[3]) { return 0; }}
   if (quadrant(stars[0].point()) == 1 && quadrant(stars[3].point()) == 1) {if (angles[0] > angles[3]) { return 0; }}
@@ -104,6 +110,8 @@ int StarGroup::valid(int W, int G, int printflg) {
   if (quadrant(stars[2].point()) == 1 && quadrant(stars[3].point()) == 1) {if (angles[3] > angles[2]) { return 0; }}
   if (quadrant(stars[2].point()) == 1 && quadrant(stars[3].point()) == 4) {return 0;}
 
+  // cerr << "passed first check" << endl;
+
   for (int i=0; i<stars.size(); i++) {
     for (int j=0; j<stars.size(); j++) {
       if (i == j) { continue; }
@@ -114,17 +122,30 @@ int StarGroup::valid(int W, int G, int printflg) {
     }
   }
   
+  // cerr << "passed second check" << endl;
+
   double R_1 = stars[0].r;
   double R_2 = stars[1].r;
   double R_3 = stars[2].r;
   double R_4 = stars[3].r;
 
-  if ( ((R_1 > G) || (R_2 > W) || (R_3 > W) || (R_4 > W))
-       && ((R_1 > W) || (R_2 > G) || (R_3 > W) || (R_4 > W))
-       && ((R_1 > W) || (R_2 > W) || (R_3 > G) || (R_4 > W))
-       && ((R_1 > W) || (R_2 > W) || (R_3 > W) || (R_4 > G)) ) {
+  int magcount = 0;
+  for (Star s : stars) {
+    if (s.r <= W) {
+      magcount++;
+    }
+  }
+
+  if (magcount < 3) {
     return 0;
   }
+
+  // if ( ((R_1 > G) || (R_2 > W) || (R_3 > W) || (R_4 > W))
+  //      && ((R_1 > W) || (R_2 > G) || (R_3 > W) || (R_4 > W))
+  //      && ((R_1 > W) || (R_2 > W) || (R_3 > G) || (R_4 > W))
+  //      && ((R_1 > W) || (R_2 > W) || (R_3 > W) || (R_4 > G)) ) {
+  //   return 0;
+  // }
 
   return 1;
 }
