@@ -17,13 +17,16 @@
 using namespace std;
 
 
-#define PI               3.1415926535
-#define MINRANGE         (0.1   * 3600)
-#define MAXRANGE         (0.167 * 3600)
-#define MINIMUMTRACK     (60 * (PI / 180))
-#define MINIMUMTRACK_DEG 60
-#define USE_OBSCURATION  1
-#define MAX_OBSCURED     1
+#define PI                      3.1415926535
+#define MINRANGE                (0.1   * 3600)
+#define MAXRANGE                (0.167 * 3600)
+#define MINIMUMTRACK            (60 * (PI / 180))
+#define MINIMUMTRACK_DEG        60
+#define DGNF                    0
+#define M3_OBSCURATION          1
+#define GCLEF_OBSCURATION       2
+#define N_OK_OBSCRD_FOR_PHASING 1
+#define N_OK_OBSCRD_FOR_4PROBE  0
 
 std::vector<std::string> split(const std::string &text, char sep) {
     std::vector<std::string> tokens;
@@ -84,7 +87,6 @@ int partition(vector<Star>& stars, int p, int q)
     return i;
 }
 
-// Implementation of quicksort on Star objects. Sorts by magnitude.
 void star_sort(vector<Star>& stars, int p, int q)
 {
     int r;
@@ -124,69 +126,6 @@ vector<Star> apply_indices(vector< vector<Star> > probestars, vector<int> indice
     return result;
 }
 
-string get_wfs(string magpair) {
-    vector<string> mags = split(magpair, ':');
-    return mags[0];
-}
-
-string get_gdr(string magpair) {
-    vector<string> mags = split(magpair, ':');
-    return mags[1];
-}
-
-vector<string> dimmer_wfs(string magpair) {
-    vector<string> dimmers;
-    ostringstream pair;
-
-    vector<string> mags = split(magpair, ':');
-    int wfs = stoi(mags[0]);
-    int gdr = stoi(mags[1]);
-
-    for (int i=wfs+1; i<=19; i++) {
-        pair << i << ":" << gdr;
-        dimmers.push_back(pair.str());
-        pair.str(std::string());
-    }
-
-    return dimmers;
-}
-
-vector<string> dimmer_gdr(string magpair) {
-    vector<string> dimmers;
-    ostringstream pair;
-
-    vector<string> mags = split(magpair, ':');
-    int wfs = stoi(mags[0]);
-    int gdr = stoi(mags[1]);
-
-    for (int i=gdr+1; i<=19; i++) {
-        pair << wfs << ":" << i;
-        dimmers.push_back(pair.str());
-        pair.str(std::string());
-    }
-
-    return dimmers;
-}
-
-vector<string> dimmer_pairs(string magpair) {
-    vector<string> dimmers;
-    ostringstream pair;
-
-    vector<string> mags = split(magpair, ':');
-    int wfs = stoi(mags[0]);
-    int gdr = stoi(mags[1]);
-
-    for (int i=wfs; i<=19; i++) {
-      for (int j=gdr; j<=19; j++) {
-        pair << i << ":" << j;
-        dimmers.push_back(pair.str());
-        pair.str(std::string());
-      }
-    }
-
-    return dimmers;
-}
-
 vector<Star> stars_in_angular_distance(Point p, vector<Star> stars, double dist) {
   vector<Star> result;
   for (Star s : stars) {
@@ -200,29 +139,7 @@ vector<Star> stars_in_angular_distance(Point p, vector<Star> stars, double dist)
   return result;
 }
 
-Star find_backward_transfer(Probe probe, Star initial_star, vector<Star> stars) {
-  Star transfer;
-  double max_track = angle_between_vectors(initial_star.point(), probe.axis.rotate(90 * (PI / 180)));
-
-  vector<Star> candidates = stars_in_angular_distance(probe.axis, stars, max_track);
-  for (Star s : candidates) {
-    if (s.r <= initial_star.r) {
-      transfer = s;
-    }
-  }
-
-  return transfer;
-}
-
-bool valid_with_current_stars(vector<Probe> probes, int wfsmag, int gdrmag) {
-  vector<Star> stars;
-  for (Probe p : probes) { stars.push_back(p.current_star); }
-  StarGroup group(stars);
-
-  return group.valid(wfsmag, gdrmag, 0);
-}
-
-void print_with_current_stars(vector<Probe> probes) {
+void print_with_current_stars(vector<Probe> probes, int obscuration_type) {
   for (int i=0; i<probes.size(); i++) {
     vector<Polygon> transformed_parts = probes[i].transform_parts(probes[i].current_star.point());
     transformed_parts[1].polyprint();
@@ -231,11 +148,14 @@ void print_with_current_stars(vector<Probe> probes) {
     probes[i].Base.polyprint();
   }
 
-  get_m3_obscuration(0).polyprint();
+  if (obscuration_type != DGNF) {
+    Polygon obscuration = get_obscuration(obscuration_type);
+    obscuration.polyprint();
+  }
 }
 
 
-bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
+bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, int obscuration_type) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
     probes[k].base_star    = group.stars[k];
@@ -254,7 +174,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
     }
 
 
-    while (has_collisions_with_current_stars(probes, USE_OBSCURATION)) {
+    while (has_collisions_with_current_stars(probes, obscuration_type)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -273,11 +193,14 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag) {
         }
       }
 
-      for (int l=0; l<probes.size(); l++) {
-        if (obscured(probes[l].current_star)) {
-          if (probes[l].backtrack(i * (PI / 180)) == -1) {
-            nobacktrack = true;
-            break;
+      if (obscuration_type != DGNF) {
+        Polygon obscuration = get_obscuration(obscuration_type);
+        for (int l=0; l<probes.size(); l++) {
+          if (star_is_obscured(probes[l].current_star, obscuration)) {
+            if (probes[l].backtrack(i * (PI / 180)) == -1) {
+              nobacktrack = true;
+              break;
+            }
           }
         }
       }
@@ -303,7 +226,7 @@ void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<
   }
 }
 
-void transform_and_print(vector<Probe> probes, StarGroup group) {
+void transform_and_print(vector<Probe> probes, StarGroup group, int obscuration_type) {
   for (int i=0; i<probes.size(); i++) {
     // group.stars[i].point().print("red");
     
@@ -314,10 +237,13 @@ void transform_and_print(vector<Probe> probes, StarGroup group) {
     probes[i].Base.polyprint();
   }
 
-  get_m3_obscuration(0).polyprint();
+  if (obscuration_type != DGNF) {
+    Polygon obscuration = get_obscuration(obscuration_type);
+    obscuration.polyprint();
+  }
 }
 
-void track_and_print_probes(vector<Probe> probes, StarGroup group) {
+void track_and_print_probes(vector<Probe> probes, StarGroup group, int obscuration_type) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
     probes[k].base_star    = group.stars[k];
@@ -327,15 +253,12 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
   bool nobacktrack = false;
 
   for (int i=0; i<MINIMUMTRACK_DEG; i++) {
-    // probes[2].base_star.point().print("g");
-    // probes[2].current_star.point().print("g");
     for (int j=0; j<probes.size(); j++) {
       probes[j].track(i * (PI / 180));
       probes[j].used_transfers.clear();
     }
-    // print_with_current_stars(probes);
 
-    while (has_collisions_with_current_stars(probes, USE_OBSCURATION)) {
+    while (has_collisions_with_current_stars(probes, obscuration_type)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -356,11 +279,13 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
         }
       }
 
-      for (int l=0; l<probes.size(); l++) {
-        if (obscured(probes[l].current_star)) {
-          if (probes[l].backtrack(i * (PI / 180)) == -1) {
-            nobacktrack = true;
-            break;
+      if (obscuration_type != DGNF) {
+        for (int l=0; l<probes.size(); l++) {
+          if (star_is_obscured(probes[l].current_star, get_obscuration(obscuration_type))) {
+            if (probes[l].backtrack(i * (PI / 180)) == -1) {
+              nobacktrack = true;
+              break;
+            }
           }
         }
       }
@@ -368,99 +293,59 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group) {
       if (nobacktrack) { break; }
     }
 
-    print_with_current_stars(probes);
+    print_with_current_stars(probes, obscuration_type);
   }
 }
 
-void here() {
-  cout << "here" << endl;
-}
+bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
+                              double wfsmag, double gdrmag, int obscuration_type) {
+  CombinationGenerator stargroups(get_list_sizes(probestars));
 
-int has_empty_bin(vector< vector<Star> > bins) {
-  int emptybins = 0;
-  for (vector<Star> bin : bins) {
-    if (bin.size() == 0) {
-      emptybins++;
+  while ( !stargroups.done ) {
+    StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
+    
+    if (current_group.valid(wfsmag, gdrmag)) {
+      if ( !has_collisions_in_parts(current_group, probes, obscuration_type, N_OK_OBSCRD_FOR_4PROBE) ) {
+        // transform_and_print(probes, current_group, obscuration_type);
+        return true;
+      }
     }
   }
 
-  return emptybins;
+  return false;
 }
 
-int get_empty_idx(vector< vector<Star> > bins) {
-  int idx = -1;
-  for (int i=0; i<bins.size(); i++) {
-    if (bins[i].size() == 0) {
-      idx = i;
-      break;
-    }
-  }
+bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
+                            double wfsmag, double gdrmag, int obscuration_type) {
 
-  return idx;
-}
-
-bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes, double wfsmag, double gdrmag, int printflg) {
-    int i;
-    string current_pair;
-    StarGroup current_group;
-    map<string, bool> valid_mags_map;
-
-    for (int i=0; i<probestars.size(); i++) {
-      probestars[i].push_back(probes[i].default_star);
-    }
-
-    CombinationGenerator stargroups = CombinationGenerator(get_list_sizes(probestars));
-
-    vector< vector<Star> > transfers;
-    vector<int> probes_with_transfers;
-
-    int count = 0;
-
-    // cerr << "already done: " << stargroups.done << endl;
-
+    CombinationGenerator stargroups(get_list_sizes(probestars));
+  
     while ( !stargroups.done ) {
-      transfers.clear();
-      probes_with_transfers.clear();
       for (Probe p : probes) {
         p.needs_transfer = false;
       }
 
-      current_group = StarGroup(apply_indices(probestars, stargroups.next()));
+      StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
       for (int i=0; i<probes.size(); i++) {
         probes[i].backward_transfers.clear();
         probes[i].current_star = current_group.stars[i];
       }
 
-      // if (emptyidx != -1) {
-      //   current_group.add_star(probes[emptyidx].default_star);
-      // }
 
-      // transform_and_print(probes, current_group);
-
-      if (current_group.valid(wfsmag, gdrmag, 0)) {
-
-        // current_group.stars[1].print();
-
-        // transform_and_print(probes, current_group);
-        // exit(0);
-
-        if ( !has_collisions_in_parts(current_group, probes, USE_OBSCURATION, MAX_OBSCURED) ) {
-
-          // transform_and_print(probes, current_group);
-          return true;
-
+      if (current_group.valid(wfsmag, gdrmag)) {
+        if ( !has_collisions_in_parts(current_group, probes, obscuration_type, N_OK_OBSCRD_FOR_4PROBE) ) {
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
 
+          // add nobacktrack logic
           for (Probe p : probes) {
             if (p.needs_transfer && p.backward_transfers.size() == 0) {
               return false;
             }
           }
 
-
-          if (trackable(probes, current_group, wfsmag, gdrmag)) {
-            // track_and_print_probes(probes, current_group);
+          if (trackable(probes, current_group, wfsmag, gdrmag, obscuration_type)) {
+            // track_and_print_probes(probes, current_group, obscuration_type);
             return true;
           } else {
             return false;
@@ -470,6 +355,26 @@ bool is_valid_pair(vector<Star> stars, vector< vector<Star> > probestars, vector
     }
 
     return false;
+}
+
+bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probes, double maglim) {
+  for (int i=0; i<probestars.size(); i++) {
+    probestars[i].push_back(probes[i].default_star);
+  }
+
+  CombinationGenerator stargroups(get_list_sizes(probestars));
+
+  while ( !stargroups.done ) {
+    StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
+
+    if (current_group.valid_for_phasing(maglim)) {
+      if ( !has_collisions_in_parts(current_group, probes, M3_OBSCURATION, N_OK_OBSCRD_FOR_PHASING) ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 vector<Star> load_stars(string filename) {
@@ -521,38 +426,6 @@ vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int 
   return result;
 }
 
-map<string, bool> valid_mags_in_starfield(vector<Star> stars, vector<Probe> probes) {
-  int bin;
-  ostringstream currentpairstream;
-  string currentpair;
-  vector< vector<Star> > probestars, current_bin;
-  map<string, bool> result;
-
-  probestars = get_probe_stars(stars, probes);
-
-  for (int wfsmag=13; wfsmag<=19; wfsmag++) {
-    for (int gdrmag=13; gdrmag<=19; gdrmag++) {
-      currentpairstream.str(std::string());
-      bin = max(wfsmag, gdrmag);
-
-      currentpairstream << wfsmag << ":" << gdrmag;
-      currentpair = currentpairstream.str();
-
-      current_bin = probestars_in_bin(probestars, bin);
-
-      if (result[currentpair] == true) { continue; }
-
-      // result[currentpair] = is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag);
-
-      if ( result[currentpair] == true ) {
-        for ( string dimmerpair : dimmer_pairs(currentpair) ) { result[dimmerpair] = true; }
-      }
-    }
-  }
-
-  return result;
-}
-
 vector<string> files_in_dir(string dirname, string regexp) {
   ostringstream path;
   vector<string> filenames;
@@ -574,27 +447,9 @@ vector<string> files_in_dir(string dirname, string regexp) {
   return filenames;
 }
 
-void dogrid_file(map<string, int> ValidMags, double nfiles) {
-    cout << "grid\tconfig\twfsmag\tgdrmag\tprob\n";
-    cout << "----\t------\t------\t------\t----\n";
-
-    string wfs, gdr;
-    double prob;
-    for (auto const entry : ValidMags) {
-        wfs = get_wfs(entry.first);
-        gdr = get_gdr(entry.first);
-
-        prob = entry.second / (nfiles * 1.0);
-
-        cout << "grid\tdgnf\t" << wfs << "\t" << gdr << "\t" << prob << "\n";
-    }
-}
-
 void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   std::ofstream fout;
   fout.open(filename);
-
-  // cerr << "writing stars to " << filename << endl;
 
   for (Star s : stars) {
     if (s.r < max(wfsmag, gdrmag)) {
@@ -605,27 +460,63 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   fout.close();
 }
 
-vector<Probe> probes_except(vector<Probe> probes, int idx) {
-  vector<Probe> res;
-  for (int i=0; i<probes.size(); i++) {
-    if (i != idx) {
-      res.push_back(probes[i]);
+int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probes, int maglim, int nfiles) {
+  int valid_files = 0;
+
+  for (int i=0; i<nfiles; i++) {
+    vector<Star> stars = load_stars(starfld_files[i]);
+
+    vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
+    vector< vector<Star> > current_bin = probestars_in_bin(probestars, maglim);
+
+    if (is_valid_phasing_mag(current_bin, probes, maglim)) {
+      valid_files++;
+      ostringstream starfile;
+      starfile << "starfiles_m3/starfield" << valid_files << ".cat";
+      write_stars(stars, starfile.str(), maglim, maglim);
+    } else {
+      ostringstream starfile;
+      starfile << "starfiles_m3/starfield" << valid_files << "_invalid.cat";
+      write_stars(stars, starfile.str(), maglim, maglim);
     }
   }
-
-  return res;
+  
+  return valid_files;
 }
 
-vector< vector<Star> > filter_empty_bin(vector< vector<Star> > bin) {
-  vector< vector<Star> > res;
-  for (int i=0; i<bin.size(); i++) {
-    if (bin[i].size() != 0) {
-      res.push_back(bin[i]);
+int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes, int wfsmag, int gdrmag,
+                              int nfiles, int obscuration_type, bool tracking) {
+  int valid_files = 0;
+
+  bool (*is_valid_pair)(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
+                        double wfsmag, double gdrmag, int obscuration_type);
+
+  is_valid_pair = is_valid_pair_notracking;
+  if (tracking) {
+    is_valid_pair = is_valid_pair_tracking;
+  }
+  
+  for (int i=0; i<nfiles; i++) {
+    vector<Star> stars = load_stars(starfld_files[i]);
+
+    vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
+    vector< vector<Star> > current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
+
+    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration_type)) {
+      valid_files++;
+      ostringstream starfile;
+      starfile << "starfiles_m3/starfield" << valid_files << ".cat";
+      write_stars(stars, starfile.str(), wfsmag, gdrmag);
+    } else {
+      ostringstream starfile;
+      starfile << "starfiles_m3/starfield" << valid_files << "_invalid.cat";
+      write_stars(stars, starfile.str(), wfsmag, gdrmag);
     }
   }
-
-  return res;
+  
+  return valid_files;
 }
+
 
 int main(int argc, char *argv[]) {
   Probe probe1(0);
@@ -633,10 +524,10 @@ int main(int argc, char *argv[]) {
   Probe probe3(180);
   Probe probe4(-90);
 
-  Star probe1default(0, 1000, 20, 0);
-  Star probe2default(-1000, 0, 20, 0);
-  Star probe3default(0, -1000, 20, 0);
-  Star probe4default(1000, 0, 20, 0);
+  Star probe1default(0,     1000,  20, 0);
+  Star probe2default(-1000, 0,     20, 0);
+  Star probe3default(0,     -1000, 20, 0);
+  Star probe4default(1000,  0,     20, 0);
 
   probe1.default_star = probe1default;
   probe2.default_star = probe2default;
@@ -653,72 +544,61 @@ int main(int argc, char *argv[]) {
 
   vector<Star>  stars;
 
-  map<string, int>  ValidMagnitudes;
-  map<string, bool> CurrentFileValidMagnitudes;
+  /**
+  arg format:
+      ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <wfsmag> <gdrmag> <nfiles>
 
-  int count = 0;
-  int wfsmag, gdrmag, nfiles;
+  argv[1] -> regular simulation or phasing
+  argv[2] -> obscuration type. '--dgnf' for no obscuration
+  argv[3] -> tracking or notracking
+  argv[3] -> wfsmag
+  argv[4] -> gdrmag
+  argv[5] -> number of files to test
+  **/
+  
+  bool phasing, tracking;
+  int  obscuration_type;
+  int  wfsmag, gdrmag, nfiles;
 
-  string file_regex;
-  if (argc < 2) {
-    file_regex = ".*";
+  if (argc < 7) {
+    cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <wfsmag> <gdrmag> <nfiles>" << endl;
+    return 0;
   } else {
-    wfsmag = atoi(argv[1]);
-    gdrmag = atoi(argv[1]);
-    nfiles = atoi(argv[3]);
+    if (strcmp(argv[1], "--phasing") == 0) {
+      phasing = true;
+    } else {
+      phasing = false;
+    }
+
+    if (strcmp(argv[2], "--gclef") == 0) {
+      obscuration_type = GCLEF_OBSCURATION;
+    } else if (strcmp(argv[2], "--m3") == 0) {
+      obscuration_type = M3_OBSCURATION;
+    } else {
+      obscuration_type = DGNF;
+    }
+
+    if (strcmp(argv[3], "--track") == 0) {
+      tracking = true;
+    } else {
+      tracking = false;
+    }
+
+    wfsmag = atoi(argv[4]);
+    gdrmag = atoi(argv[5]);
+    nfiles = atoi(argv[6]);
   }
 
   vector<string> starfield_files = files_in_dir("Bes/", ".*");
-  vector<string>::iterator curr_path;
 
-  bool valid_file;
-  vector< vector<Star> > probestars, current_bin;
-    int printflg = 0;
-    double valid_files = 0;
-
-  if (strcmp("--only", argv[3]) == 0) {
-    cerr << "Processing file " << starfield_files[stoi(argv[4])-1] << endl;
-    stars = load_stars(starfield_files[stoi(argv[4])-1]);
-
-
-    probestars = get_probe_stars(stars, probes);
-    // for (Star s : probestars[1]) {
-    //  s.print();
-    // }
-    // cerr << "binning" << endl;
-    current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
-
-    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, 0)) {
-      cerr << 1 << endl;
-    } else {
-      cerr << 0 << endl;
-    }
-
-    ostringstream starfile;
-    write_stars(stars, "starfiles_m3/starfield1.cat", wfsmag, gdrmag);
+  double valid_files = 0;
+  if (phasing) {
+    valid_files = number_valid_phasing_files(starfield_files, probes, wfsmag, nfiles);
   } else {
-    for (int i=0; i<nfiles; i++) {
-      // cerr << "Processing file " << starfield_files[i] << ": ";
-      stars = load_stars(starfield_files[i]);
-
-      probestars  = get_probe_stars(stars, probes);
-      current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
-
-      if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, printflg)) {
-        valid_files++;
-        ostringstream starfile;
-        starfile << "starfiles_m3/starfield" << (i+1) << ".cat";
-        write_stars(stars, starfile.str(), wfsmag, gdrmag);
-      } else {
-        ostringstream starfile;
-        starfile << "starfiles_m3/starfield" << (i+1) << "_invalid.cat";
-        write_stars(stars, starfile.str(), wfsmag, gdrmag);
-      }
-    }
+    valid_files = number_valid_4probe_files(starfield_files, probes, wfsmag, gdrmag, nfiles, obscuration_type, tracking);
   }
 
-  cout << valid_files / nfiles << endl;
-
+  cerr << valid_files / nfiles << endl;
 
   return 0;
 }

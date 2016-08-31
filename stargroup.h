@@ -18,7 +18,8 @@ class StarGroup {
   Star star_at(int idx);
   void update_mags();
   string magpair();
-  int valid(int W, int G, int printflg);
+  int valid_for_phasing(int J);
+  int valid(int W, int G);
   int wfsmag();
   int gdrmag();
   void print();

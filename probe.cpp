@@ -112,11 +112,11 @@ Polygon get_baffle_tube(double angle, double padding) {
   return BaffleTube;
 }
 
-Polygon get_gclef_obscuration(double padding) {
-  double width = 496 + padding;
+Polygon get_gclef_obscuration() {
+  double width = 496;
 
   Point origin(0, 0);
-  Point LevelOne(0, 1400 + padding);
+  Point LevelOne(0, 1400);
   Point LevelTwo(0, -264);
 
   Edge  ObscurationEdge(origin, LevelOne);
@@ -135,12 +135,12 @@ Polygon get_gclef_obscuration(double padding) {
   return Obscuration;
 }
 
-Polygon get_m3_obscuration(double padding) {
+Polygon get_m3_obscuration() {
   double levelonewidth = 601.93;
   double leveltwowidth = 80;
 
   Point origin(0, 0);
-  Point LevelOne(0, 1200 + padding);
+  Point LevelOne(0, 1200);
   Point LevelTwo(0, 96.75);
 
   Edge ObscurationEdge(origin, LevelOne);
@@ -158,6 +158,18 @@ Polygon get_m3_obscuration(double padding) {
   }
 
   return Obscuration;
+}
+
+Polygon get_obscuration(int obscuration_type) {
+  Polygon res;
+
+  if (obscuration_type == 1) {
+    res = get_m3_obscuration();
+  } else {
+    res = get_gclef_obscuration();
+  }
+
+  return res;
 }
 
 Polygon get_base(double angle) {

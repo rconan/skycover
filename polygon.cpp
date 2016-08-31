@@ -63,9 +63,9 @@ void Polygon::polyprint() {
   vector<Point>::iterator currpt;
 
   for (currpt=points.begin(); currpt!=points.end(); currpt++) {
-    printf("(%f, %f) ", currpt->x, currpt->y);
+    fprintf(stdout, "(%f, %f) ", currpt->x, currpt->y);
   }
-  printf("\n");
+  fprintf(stdout, "\n");
 }
 
 vector<double> Polygon::ycoords() {
