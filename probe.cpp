@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
 
@@ -13,104 +14,23 @@ using namespace std;
 #define MINRANGE         (0.1   * 3600)
 #define MAXRANGE         (0.167 * 3600)
 
+std::vector<std::string> split(const std::string &text, char sep) {
+    std::vector<std::string> tokens;
+    std::size_t start = 0, end = 0;
+    while ((end = text.find(sep, start)) != std::string::npos) {
+        tokens.push_back(text.substr(start, end - start));
+        start = end + 1;
+    }
+    tokens.push_back(text.substr(start));
+    return tokens;
+}
+
 Point scale(Point v, double m) {
   Point scaled(v.x * m, v.y * m);
   return scaled;
 }
 
 Probe::Probe() { }
-
-Polygon get_middle_slider(double angle, double padding) {
-  Point origin(0, 0);
-  double basewidth     = 660 + padding;
-  double trapbasewidth = 600 + padding;
-  double traptopwidth  = 397.5 + padding;
-  double toprectwidth  = 150 + padding;
-  
-
-  Point LevelOne(0, 1400);
-  Edge  LevelOneEdge(origin, LevelOne);
-  Point BaseWidthVector = scale(LevelOneEdge.normal(), basewidth/2);
-
-  Point LevelTwo(0, 550);
-  Edge  LevelTwoEdge(origin, LevelTwo);
-  Point TrapBaseWidthVector = scale(LevelTwoEdge.normal(), trapbasewidth/2);
-  Point TrapTopWidthVector  = scale(LevelTwoEdge.normal(), traptopwidth/2);
-
-  Point LevelThree(0, 463.6 - padding);
-  Edge  LevelThreeEdge(origin, LevelThree);
-  Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
-  
-  Point LevelFour(0, 115.6 - padding);
-
-  Polygon MiddleSlider;
-  MiddleSlider.add_pt(LevelOne.translate(origin, BaseWidthVector));
-  MiddleSlider.add_pt(LevelTwo.translate(origin, BaseWidthVector));
-
-  // MiddleSlider.add_pt(LevelTwo.translate(origin, TrapBaseWidthVector));
-
-  MiddleSlider.add_pt(LevelThree.translate(origin, TrapTopWidthVector));
-
-  MiddleSlider.add_pt(LevelThree.translate(origin, scale(TrapTopWidthVector, -1)));
-
-  // MiddleSlider.add_pt(LevelTwo.translate(origin, scale(TrapBaseWidthVector, -1)));
-
-  MiddleSlider.add_pt(LevelTwo.translate(origin, scale(BaseWidthVector, -1)));
-  MiddleSlider.add_pt(LevelOne.translate(origin, scale(BaseWidthVector, -1)));
-
-  for (int i=0; i<MiddleSlider.points.size(); i++) {
-    MiddleSlider.points[i] = MiddleSlider.points[i].rotate(angle * (PI / 180));
-  }
-
-  return MiddleSlider;
-}
-
-Polygon get_slider_shaft(double angle, double padding) {
-  double toprectwidth  = 150 + padding;
-  Point origin(0, 1);
-  Point LevelThree(0, 463.6 - padding);
-  Edge  LevelThreeEdge(origin, LevelThree);
-  Point TopRectWidthVector = scale(LevelThreeEdge.normal(), toprectwidth/2);
-  
-  Point LevelFour(0, 115.6 - padding);
-
-  Polygon SliderShaft;
-
-  SliderShaft.add_pt(LevelThree.translate(origin, TopRectWidthVector));
-  SliderShaft.add_pt(LevelFour.translate(origin, TopRectWidthVector));
-  
-  SliderShaft.add_pt(LevelFour.translate(origin, scale(TopRectWidthVector, -1)));
-  SliderShaft.add_pt(LevelThree.translate(origin, scale(TopRectWidthVector, -1)));
-
-  for (int i=0; i<SliderShaft.points.size(); i++) {
-    SliderShaft.points[i] = SliderShaft.points[i].rotate(angle * (PI / 180));
-  }
-
-  return SliderShaft;
-}
-
-Polygon get_baffle_tube(double angle, double padding) {
-  double bafflewidth = 145 + padding;
-  
-  Point origin(0, 0);
-  Point LevelOne(0, 474 + padding);
-  Point LevelTwo(0, -76);
-
-  Edge  BaffleTubeEdge(origin, LevelOne);
-  Point BaffleTubeWidthVector(scale(BaffleTubeEdge.normal(), bafflewidth/2));
-
-  Polygon BaffleTube;
-  BaffleTube.add_pt(LevelOne.translate(origin, BaffleTubeWidthVector));
-  BaffleTube.add_pt(LevelTwo.translate(origin, BaffleTubeWidthVector));
-  BaffleTube.add_pt(LevelTwo.translate(origin, scale(BaffleTubeWidthVector, -1)));
-  BaffleTube.add_pt(LevelOne.translate(origin, scale(BaffleTubeWidthVector, -1)));
-
-  for (int i=0; i<BaffleTube.points.size(); i++) {
-    BaffleTube.points[i] = BaffleTube.points[i].rotate(angle * (PI / 180));
-  }
-
-  return BaffleTube;
-}
 
 Polygon get_gclef_obscuration() {
   double width = 496;
@@ -172,79 +92,64 @@ Polygon get_obscuration(int obscuration_type) {
   return res;
 }
 
-Polygon get_base(double angle) {
-  double basewidth = 800;
+Polygon load_poly(string filename) {
+  std::ifstream infile(filename);
+  vector<string> points;
+  string line;
+  Polygon poly;
 
-  Point origin(0, 0);
-  Point LevelOne(0, 1800);
-  Point LevelTwo(0, 1000);
+  for ( ; getline(infile, line); ) {
+    vector<string> points = split(line, '\t');
+    Point current_pt(stod(points[0]), stod(points[1]));
 
-  Edge BaseEdge(origin, LevelOne);
-  Point BaseWidthVector(scale(BaseEdge.normal(), basewidth/2));
-
-  Polygon Base;
-  Base.add_pt(LevelOne.translate(origin, BaseWidthVector));
-  Base.add_pt(LevelTwo.translate(origin, BaseWidthVector));
-  Base.add_pt(LevelTwo.translate(origin, scale(BaseWidthVector, -1)));
-  Base.add_pt(LevelOne.translate(origin, scale(BaseWidthVector, -1)));
-
-  for (int i=0; i<Base.points.size(); i++) {
-    Base.points[i] = Base.points[i].rotate(angle * (PI / 180));
+    poly.add_pt(current_pt);
   }
 
-  return Base;
+  return poly;
 }
 
-Probe::Probe(double _angle) {
-  angle = _angle;
-  padding = 10;
-  
-  Slider      = get_middle_slider(angle, padding);
-  BaffleTube  = get_baffle_tube(angle, padding);
-  Base        = get_base(angle);
-  SliderShaft = get_slider_shaft(angle, padding);
+Point calculate_shaft_front(Polygon slider_shaft) {
+  return Point(0, slider_shaft.min_abs_y());
+}
 
-  parts.push_back(Slider);
+Point calculate_baffle_ctr(Polygon baffle_tube) {
+  return Point(0, baffle_tube.min_abs_y());
+}
+
+Probe::Probe(double _angle, double _padding, string slider_body_file,
+             string slider_shaft_file, string baffle_tube_file) {
+  angle   = _angle;
+  padding = _padding;
+
+  Base_SliderBody  = load_poly(slider_body_file).rotate(angle * (PI / 180));
+  Base_SliderShaft = load_poly(slider_shaft_file).rotate(angle * (PI / 180));
+  Base_BaffleTube  = load_poly(baffle_tube_file).rotate(angle * (PI / 180));
+
+  SliderBody  = Base_SliderBody;
+  SliderShaft = Base_SliderShaft;
+  BaffleTube  = Base_BaffleTube;
+
+  parts.push_back(SliderBody);
   parts.push_back(BaffleTube);
   parts.push_back(SliderShaft);
 
-  start_distance_from_center = 115.6;
+  // SliderShaftFront = calculate_shaft_front(SliderShaft).rotate(angle * (PI / 180));
+  // BaffleTubeCtr    = calculate_baffle_ctr(BaffleTube).rotate(angle * (PI / 180));
+
   SliderShaftFront = Point(0, 115.6).rotate(angle * (PI / 180));
-  BaffleTubeCtr = Point(0, 474).rotate(angle * (PI / 180));
+  BaffleTubeCtr = Point(0, 409).rotate(angle * (PI / 180));
 
   Point origin_vector(0, 1000);
-  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.400);
-  center = axis;
-
-  radius = 1400;
-
-  needs_transfer = false;
-
-  Point origin(0, 0);
-  rotate_about = origin;
-}
-
-Probe::Probe(double angle, double _width, double length) {
-  needs_transfer = false;
   
-  Point origin(0, 0);
-  Point origin_vector(0, 1000);
-
-  radius = length;
-  width = _width;
-
-  axis = origin_vector.rotate(angle * (PI / 180));
+  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
   center = axis;
+
+  radius = 1300;
+
+  needs_transfer = false;
+
+  Point origin(0, 0);
   rotate_about = origin;
-  Edge e(origin, center);
-  Point u = scale(e.normal(), width/2);
-
-  double m = length / distance(origin, center);
-
-  add_pt(center.translate(origin, u));
-  add_pt(center.translate(origin, scale(u, -1)));
-  add_pt(polygon.points[1].translate(origin, scale(center, -m)));
-  add_pt(polygon.points[0].translate(origin, scale(center, -m)));
 }
 
 Probe::~Probe(void) { }
@@ -312,11 +217,9 @@ Polygon translate_poly(Polygon polygon, Point from, Point to) {
   Polygon translated_poly;
   vector<Point>::iterator it;
 
-  // polygon.polyprint();
   for(it = polygon.points.begin(); it != polygon.points.end(); it++) {
     translated_poly.add_pt(it->translate(from, to));
   }
-  // translated_poly.polyprint();
 
   return translated_poly;
 }
@@ -407,22 +310,6 @@ vector<Point> get_points(vector<Polygon> polygons) {
   return res;
 }
 
-// void Probe::move_slider(double new_dist_from_center) {
-//   Point origin(0, 0);
-//   double slide_amount = new_dist_from_center - start_distance_from_center;
-// 
-//   Point unit_axis = axis.normalize();
-//   for (int i=0; i<Slider.points.size(); i++) {
-//     Slider.points[i] = Slider.points[i].translate(origin, scale(unit_axis, slide_amount));
-//   }
-// 
-//   parts[0] = Slider;
-// }
-
-void arbvector(Point u, Point v, string color) {
-  cerr << "arbvector(" << u.x << ", " << u.y << ", " << v.x << ", " << v.y << ", '" << color << "')" << endl;
-}
-
 Polygon Probe::move_slider(Polygon slider, double theta, Point pivot, double baffle_sep) {
   Point w = SliderShaftFront.translate(center, rotate_about).rotate(theta).translate(rotate_about, center);
   Point v = Point(pivot.x - w.x, pivot.y - w.y);
@@ -453,11 +340,6 @@ void Probe::position_baffle_tube(Point pt) {
 
   double distance_from_center = distance(origin, c) - distance(origin, intersection);
 
-  // BaffleTubeCtr.print("red");
-  // pt.print("red");
-
-  // intersection.print("green");
-
   Point unit_axis = axis.normalize();
   for (int i=0; i<BaffleTube.points.size(); i++) {
     BaffleTube.points[i] = BaffleTube.points[i].translate(origin, scale(unit_axis, distance_from_center));
@@ -467,13 +349,13 @@ void Probe::position_baffle_tube(Point pt) {
 }
 
 void Probe::reset_parts() {
-  Slider     = get_middle_slider(angle, padding);
-  BaffleTube = get_baffle_tube(angle, padding);
-  SliderShaft = get_slider_shaft(angle, padding);
+  SliderBody = Base_SliderBody;
+  SliderShaft = Base_SliderShaft;
+  BaffleTube = Base_BaffleTube;
 
   parts.clear();
 
-  parts.push_back(Slider);
+  parts.push_back(SliderBody);
   parts.push_back(BaffleTube);
   parts.push_back(SliderShaft);
 }
@@ -497,6 +379,7 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
     transformed_parts.push_back(retranslated);
   }
 
+
   transformed_parts[0] = move_slider(transformed_parts[0], theta, pivot, baffle_separation(pivot));
   transformed_parts[2] = move_slider(transformed_parts[2], theta, pivot, baffle_separation(pivot));
 
@@ -515,21 +398,6 @@ Polygon Probe::transform(Point pivot) {
   Polygon retranslated    = translate_poly(rotated_poly, rotate_about, center);
 
   return retranslated;
-}
-
-bool Probe::can_cover(Star s) {
-  // true if angle between axis and point is < 90 deg.
-  return abs(angle_to_point(s.point())) <= 1.57079632679;
-}
-
-void Probe::probe_coverage() {
-  Point origin(0, 0);
-
-  coverable_area.add_pt(axis.rotate(-90 * (PI / 180)));
-  coverable_area.add_pt(axis);
-  coverable_area.add_pt(axis.rotate(90  * (PI / 180)));
-  coverable_area.add_pt(scale(coverable_area.points[0], 0.4));
-  coverable_area.add_pt(scale(coverable_area.points[2], 0.4));
 }
 
 vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1) {
@@ -565,7 +433,6 @@ double Probe::track_distance(Star s) {
   
   vector<Point> range_extremes = circle_intersections(center, radius, origin, distance(origin, s.point()));
 
-  // cout << "range extremes size: " << range_extremes.size() << endl;
   if (range_extremes.size() < 2) {
     return 0;
   }
@@ -577,21 +444,8 @@ double Probe::track_distance(Star s) {
     star_exit_range = range_extremes[1];
   }
 
-  // cout << "range_extremes[0]: ";
-  // range_extremes[0].print("black");
-  // cout << "angle to range extremes[0]: " << angle_to_point(range_extremes[0]) << endl;
-
-  // cout << "vector";
-  // star_exit_range.print("black");
-  // cout << "vector";
-  // axis.print("black");
-  // cout << "vector" << angle_to_point(star_exit_range) << endl;
-
   Point u(star_exit_range.x - axis.x, star_exit_range.y - axis.y);
   Point v(s.point().x - axis.x, s.point().y - axis.y);
-
-  // v.print("red");
-  // u.print("black");
 
   return abs_angle_between_vectors(v, u);
 }
@@ -645,10 +499,7 @@ int Probe::track(double dist) {
       if (in_range(s.rotate(dist))) {
         found = true;
         base_star = s;
-        // base_star.point().print("m");
         current_star  = s.rotate(dist);
-
-        // current_star.point().print("g");
 
         break;
       }
@@ -701,8 +552,6 @@ bool Probe::in_range(Star s) {
     return false;
   }
 
-  // cout << "passed distance tests" << endl;
-
   Point star_enter_range, star_exit_range;
   if (angle_between_vectors(range_extremes[0], axis) < 0) {
     star_exit_range  = range_extremes[0];
@@ -711,9 +560,6 @@ bool Probe::in_range(Star s) {
     star_exit_range  = range_extremes[1];
     star_enter_range = range_extremes[0];
   }
-
-  // cout << abs(angle_to_point(s.point())) << endl;
-  // cout << "SWEEPANGLE: " << SWEEPANGLE << endl;
 
   if (abs(angle_to_point(s.point())) < SWEEPANGLE) {
     return true;
@@ -758,7 +604,7 @@ vector<Star>::iterator find_star(vector<Star> starlist, Star s) {
   return curr;
 }
 
-bool in(vector<Star> list, Star s) {
+bool member(Star s, vector<Star> list) {
   for (Star el : list) {
     if (s.equals(el)) {
       return true;
@@ -775,19 +621,16 @@ int Probe::backtrack(double dist) {
   for (int i=0; i<backward_transfers.size(); i++) {
     Star s = backward_transfers[i];
 
-    if (in(used_transfers, s)) {
+    if (member(s, used_transfers)) {
       continue;
     }
 
     if (in_range(s.rotate(dist))) {
       found = true;
       base_star = s;
-      // base_star.point().print("m");
       current_star  = base_star.rotate(dist);
 
       used_transfers.push_back(s);
-
-      // current_star.point().print("g");
 
       break;
     }

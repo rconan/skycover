@@ -15,7 +15,8 @@ class Probe {
   Probe();
   Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle);
   Probe(double angle, double _width, double length);
-  Probe(double angle);
+  Probe(double _angle, double _padding, string slider_body_file,
+               string slider_shaft_file, string baffle_tube_file);
   ~Probe();
 
   string name;
@@ -33,13 +34,16 @@ class Probe {
   bool needs_transfer;
   vector<Polygon> parts;
   double start_distance_from_center;
-  Polygon Slider;
+  Polygon SliderBody;
+  Polygon SliderShaft;
   Polygon BaffleTube;
+  Polygon Base_SliderBody;
+  Polygon Base_SliderShaft;
+  Polygon Base_BaffleTube;
   Polygon Base;
   double angle;
   Point BaffleTubeCtr;
   Point SliderShaftFront;
-  Polygon SliderShaft;
   double distance_tracked;
   double padding;
   Star default_star;
@@ -79,5 +83,6 @@ bool safe_distance_from_center(Star s);
 Polygon get_gclef_obscuration();
 Polygon get_m3_obscuration();
 Polygon get_obscuration(int obscuration_type);
+vector<string> split(const string &text, char sep);
 
 #endif

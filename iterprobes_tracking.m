@@ -1,6 +1,6 @@
 function iterprobes_tracking(filename, starfield_dir, wsize)
 
-    probes = read_polygons(filename, [4 6 4 4 4]);
+    probes = read_polygons(filename, [4 4 4 4]);
     
     figure; hold on;
     ylim([-wsize, wsize]);
@@ -38,9 +38,9 @@ function iterprobes_tracking(filename, starfield_dir, wsize)
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
         
-    colors = [sgidarkgray; darkgrey; dimgray; dimgray];
+    colors = [sgidarkgray; darkgrey; dimgray];
     
-    npolygons = 17;
+    npolygons = 13;
     nconfigurations = 60;
     probe_handles = double.empty(1, npolygons, 0);
     num_valid_configs = size(probes, 2) / (nconfigurations * npolygons);

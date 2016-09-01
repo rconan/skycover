@@ -1,6 +1,6 @@
 function iterprobes(filename, varargin)
 
-    dims = [4 6 4 4];
+    dims = [4 4 4 4];
     probes = read_polygons(filename, dims);
     
     figure; hold on;
@@ -24,9 +24,9 @@ function iterprobes(filename, varargin)
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
         
-    colors = [sgidarkgray; dimgray; darkgrey; dimgray];
+    colors = [sgidarkgray; dimgray; darkgrey];
 
-    npolygons = 17;
+    npolygons = 13;
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     

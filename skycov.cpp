@@ -28,17 +28,6 @@ using namespace std;
 #define N_OK_OBSCRD_FOR_PHASING 1
 #define N_OK_OBSCRD_FOR_4PROBE  0
 
-std::vector<std::string> split(const std::string &text, char sep) {
-    std::vector<std::string> tokens;
-    std::size_t start = 0, end = 0;
-    while ((end = text.find(sep, start)) != std::string::npos) {
-        tokens.push_back(text.substr(start, end - start));
-        start = end + 1;
-    }
-    tokens.push_back(text.substr(start));
-    return tokens;
-}
-
 vector<int> get_list_sizes(vector< vector<Star> > lists) {
     int i;
     vector<int> result;
@@ -145,7 +134,7 @@ void print_with_current_stars(vector<Probe> probes, int obscuration_type) {
     transformed_parts[1].polyprint();
     transformed_parts[0].polyprint();
     transformed_parts[2].polyprint();
-    probes[i].Base.polyprint();
+    // probes[i].Base.polyprint();
   }
 
   if (obscuration_type != DGNF) {
@@ -231,10 +220,9 @@ void transform_and_print(vector<Probe> probes, StarGroup group, int obscuration_
     // group.stars[i].point().print("red");
     
     vector<Polygon> transformed_parts = probes[i].transform_parts(group.stars[i].point());
-    transformed_parts[1].polyprint();
-    transformed_parts[0].polyprint();
-    transformed_parts[2].polyprint();
-    probes[i].Base.polyprint();
+    for (Polygon part : transformed_parts) {
+      part.polyprint();
+    }
   }
 
   if (obscuration_type != DGNF) {
@@ -306,7 +294,7 @@ bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probest
     
     if (current_group.valid(wfsmag, gdrmag)) {
       if ( !has_collisions_in_parts(current_group, probes, obscuration_type, N_OK_OBSCRD_FOR_4PROBE) ) {
-        // transform_and_print(probes, current_group, obscuration_type);
+        transform_and_print(probes, current_group, obscuration_type);
         return true;
       }
     }
@@ -338,17 +326,21 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
 
           // add nobacktrack logic
+          bool nobacktrack = false;
           for (Probe p : probes) {
             if (p.needs_transfer && p.backward_transfers.size() == 0) {
-              return false;
+              nobacktrack = true;
+              break;
             }
           }
 
+          if (nobacktrack) {
+            continue;
+          }
+
           if (trackable(probes, current_group, wfsmag, gdrmag, obscuration_type)) {
-            // track_and_print_probes(probes, current_group, obscuration_type);
+            track_and_print_probes(probes, current_group, obscuration_type);
             return true;
-          } else {
-            return false;
           }
         }
       }
@@ -519,10 +511,19 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
 
 
 int main(int argc, char *argv[]) {
-  Probe probe1(0);
-  Probe probe2(90);
-  Probe probe3(180);
-  Probe probe4(-90);
+  // Probe probe1(0);
+  // Probe probe2(90);
+  // Probe probe3(180);
+  // Probe probe4(-90);
+
+  string slider_body_file  = "probe_slider_body.txt";
+  string slider_shaft_file = "probe_slider_shaft.txt";
+  string baffle_tube_file  = "probe_baffle_tube.txt";
+
+  Probe probe1(0,   10, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe2(90,  10, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe3(180, 10, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe4(270, 10, slider_body_file, slider_shaft_file, baffle_tube_file);
 
   Star probe1default(0,     1000,  20, 0);
   Star probe2default(-1000, 0,     20, 0);

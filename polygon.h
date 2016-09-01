@@ -43,6 +43,9 @@ class Polygon {
   bool point_in_poly(Point p);
   vector<double> ycoords();
   vector<double> xcoords();
+  double min_abs_y();
+  double min_abs_x();
+  Polygon rotate(double angle);
 };
 
 #endif

@@ -1,7 +1,9 @@
 #include "polygon.h"
+#include <float.h>
 #include <vector>
 #include <iostream>
 #include <string>
+#include <cmath>
 using namespace std;
 
 
@@ -106,4 +108,38 @@ bool Polygon::point_in_poly(Point p) {
   }
 
   return oddNodes;
+}
+
+double Polygon::min_abs_y() {
+  double result = DBL_MAX;
+
+  for (Point pt : points) {
+    if (abs(pt.y) < result) {
+      result = pt.y;
+    }
+  }
+
+  return result;
+}
+
+double Polygon::min_abs_x() {
+  double result = DBL_MAX;
+
+  for (Point pt : points) {
+    if (pt.x < result) {
+      result = pt.x;
+    }
+  }
+
+  return result;
+}
+
+Polygon Polygon::rotate(double angle) {
+  Polygon rotated_poly;
+  
+  for (Point pt : points) {
+    rotated_poly.add_pt(pt.rotate(angle));
+  }
+
+  return rotated_poly;
 }
