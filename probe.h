@@ -13,19 +13,13 @@ class Probe {
 
  public:
   Probe();
-  Probe(string _name, double near_edge_angle_deg, double far_edge_angle_deg, double axis_angle);
-  Probe(double angle, double _width, double length);
   Probe(double _angle, double _padding, string slider_body_file,
                string slider_shaft_file, string baffle_tube_file);
   ~Probe();
 
-  string name;
   Point center;
   Point rotate_about;
   double radius;
-  double width;
-  Polygon polygon;
-  Polygon coverable_area;
   Point axis;
   Star current_star;
   Star base_star;
@@ -33,28 +27,25 @@ class Probe {
   int backward_transfer_idx;
   bool needs_transfer;
   vector<Polygon> parts;
-  double start_distance_from_center;
   Polygon SliderBody;
   Polygon SliderShaft;
   Polygon BaffleTube;
   Polygon Base_SliderBody;
   Polygon Base_SliderShaft;
   Polygon Base_BaffleTube;
-  Polygon Base;
   double angle;
   Point BaffleTubeCtr;
   Point SliderShaftFront;
   double distance_tracked;
   double padding;
   Star default_star;
+  vector<Star> used_transfers;
 
   void add_pt(double _x, double _y);
   void add_pt(Point pt);
   Point get_pt(int idx);
 
-  Polygon transform(Point pivot);
   vector<Polygon> transform_parts(Point pivot);
-  double solve_theta_offset(Point pt);
   double angle_to_point(Point pt);
   double track_distance(Star s);
   int track(double dist);
@@ -67,10 +58,6 @@ class Probe {
   void position_baffle_tube(Point pt);
   void reset_parts();
   int backtrack(double dist);
-
-  bool can_cover(Star s);
-  void probe_coverage();
-  vector<Star> used_transfers;
 };
 
 double distance(Point a, Point b);
@@ -84,5 +71,6 @@ Polygon get_gclef_obscuration();
 Polygon get_m3_obscuration();
 Polygon get_obscuration(int obscuration_type);
 vector<string> split(const string &text, char sep);
+Polygon load_poly(string filename);
 
 #endif

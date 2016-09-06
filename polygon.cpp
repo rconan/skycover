@@ -26,6 +26,7 @@ Point Edge::normal() {
 Polygon::Polygon() {
   npoints = 0;
 }
+
 Polygon::~Polygon() { }
 
 vector<Edge> Polygon::edges() {

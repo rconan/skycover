@@ -14,6 +14,7 @@ using namespace std;
 #define MINRANGE         (0.1   * 3600)
 #define MAXRANGE         (0.167 * 3600)
 
+
 std::vector<std::string> split(const std::string &text, char sep) {
     std::vector<std::string> tokens;
     std::size_t start = 0, end = 0;
@@ -31,66 +32,6 @@ Point scale(Point v, double m) {
 }
 
 Probe::Probe() { }
-
-Polygon get_gclef_obscuration() {
-  double width = 496;
-
-  Point origin(0, 0);
-  Point LevelOne(0, 1400);
-  Point LevelTwo(0, -264);
-
-  Edge  ObscurationEdge(origin, LevelOne);
-  Point ObscurationWidthVector(scale(ObscurationEdge.normal(), width/2));
-
-  Polygon Obscuration;
-  Obscuration.add_pt(LevelOne.translate(origin, ObscurationWidthVector));
-  Obscuration.add_pt(LevelTwo.translate(origin, ObscurationWidthVector));
-  Obscuration.add_pt(LevelTwo.translate(origin, scale(ObscurationWidthVector, -1)));
-  Obscuration.add_pt(LevelOne.translate(origin, scale(ObscurationWidthVector, -1)));
-
-  for (int i=0; i<Obscuration.points.size(); i++) {
-    Obscuration.points[i] = Obscuration.points[i].rotate(22.5 * (PI / 180));
-  }
-
-  return Obscuration;
-}
-
-Polygon get_m3_obscuration() {
-  double levelonewidth = 601.93;
-  double leveltwowidth = 80;
-
-  Point origin(0, 0);
-  Point LevelOne(0, 1200);
-  Point LevelTwo(0, 96.75);
-
-  Edge ObscurationEdge(origin, LevelOne);
-  Point ObscurationWidthVectorA(scale(ObscurationEdge.normal(), levelonewidth/2));
-  Point ObscurationWidthVectorB(scale(ObscurationEdge.normal(), leveltwowidth/2));
-
-  Polygon Obscuration;
-  Obscuration.add_pt(LevelOne.translate(origin, ObscurationWidthVectorA));
-  Obscuration.add_pt(LevelTwo.translate(origin, ObscurationWidthVectorB));
-  Obscuration.add_pt(LevelTwo.translate(origin, scale(ObscurationWidthVectorB, -1)));
-  Obscuration.add_pt(LevelOne.translate(origin, scale(ObscurationWidthVectorA, -1)));
-
-  for (int i=0; i<Obscuration.points.size(); i++) {
-    Obscuration.points[i] = Obscuration.points[i].rotate(-28 * (PI / 180));
-  }
-
-  return Obscuration;
-}
-
-Polygon get_obscuration(int obscuration_type) {
-  Polygon res;
-
-  if (obscuration_type == 1) {
-    res = get_m3_obscuration();
-  } else {
-    res = get_gclef_obscuration();
-  }
-
-  return res;
-}
 
 Polygon load_poly(string filename) {
   std::ifstream infile(filename);
@@ -153,19 +94,6 @@ Probe::Probe(double _angle, double _padding, string slider_body_file,
 }
 
 Probe::~Probe(void) { }
-
-void Probe::add_pt(Point pt) {
-  polygon.points.push_back(pt);
-}
-
-void Probe::add_pt(double _x, double _y) {
-  Point pt = Point(_x, _y);
-  polygon.points.push_back(pt);
-}
-
-Point Probe::get_pt(int idx) {
-  return polygon.points[idx];
-}
 
 double vector_length(Point pt) {
   return sqrt( pow(pt.x, 2) + pow(pt.y, 2) );
@@ -388,18 +316,6 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
   return transformed_parts;
 }
 
-Polygon Probe::transform(Point pivot) {
-  Point origin(0, 0);
-  
-  double theta = angle_to_point(pivot);
-
-  Polygon translated_poly = translate_poly(polygon, center, rotate_about);
-  Polygon rotated_poly    = rotate_poly(translated_poly, theta);
-  Polygon retranslated    = translate_poly(rotated_poly, rotate_about, center);
-
-  return retranslated;
-}
-
 vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1) {
   double d = distance(P0, P1);
   vector<Point> intersections;
@@ -484,8 +400,6 @@ void sort_by_transfer_distance(vector<Star>& stars, int p, int q, Point center, 
       sort_by_transfer_distance(stars, r+1, q, center, current_star);
     }
 }
-
-
 
 int Probe::track(double dist) {
   if (! in_range(base_star.rotate(dist))) {
@@ -591,17 +505,6 @@ void Probe::get_backward_transfers(vector<Star> stars, double track_dist, double
       backward_transfers.push_back(s);
     }
   }
-}
-
-vector<Star>::iterator find_star(vector<Star> starlist, Star s) {
-  vector<Star>::iterator curr;
-  for (curr=starlist.begin(); curr!=starlist.end(); curr++) {
-    if (s.x == curr->x && s.y == curr->y && s.r == curr->r) {
-      return curr;
-    }
-  }
-
-  return curr;
 }
 
 bool member(Star s, vector<Star> list) {

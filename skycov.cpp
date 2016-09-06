@@ -22,11 +22,9 @@ using namespace std;
 #define MAXRANGE                (0.167 * 3600)
 #define MINIMUMTRACK            (60 * (PI / 180))
 #define MINIMUMTRACK_DEG        60
-#define DGNF                    0
-#define M3_OBSCURATION          1
-#define GCLEF_OBSCURATION       2
 #define N_OK_OBSCRD_FOR_PHASING 1
 #define N_OK_OBSCRD_FOR_4PROBE  0
+
 
 vector<int> get_list_sizes(vector< vector<Star> > lists) {
     int i;
@@ -128,7 +126,7 @@ vector<Star> stars_in_angular_distance(Point p, vector<Star> stars, double dist)
   return result;
 }
 
-void print_with_current_stars(vector<Probe> probes, int obscuration_type) {
+void print_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     vector<Polygon> transformed_parts = probes[i].transform_parts(probes[i].current_star.point());
     transformed_parts[1].polyprint();
@@ -137,14 +135,13 @@ void print_with_current_stars(vector<Probe> probes, int obscuration_type) {
     // probes[i].Base.polyprint();
   }
 
-  if (obscuration_type != DGNF) {
-    Polygon obscuration = get_obscuration(obscuration_type);
+  if (!obscuration.points.empty()) {
     obscuration.polyprint();
   }
 }
 
 
-bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, int obscuration_type) {
+bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Polygon obscuration) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
     probes[k].base_star    = group.stars[k];
@@ -163,7 +160,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, in
     }
 
 
-    while (has_collisions_with_current_stars(probes, obscuration_type)) {
+    while (has_collisions_with_current_stars(probes, obscuration)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -182,8 +179,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, in
         }
       }
 
-      if (obscuration_type != DGNF) {
-        Polygon obscuration = get_obscuration(obscuration_type);
+      if (!obscuration.points.empty()) {
         for (int l=0; l<probes.size(); l++) {
           if (star_is_obscured(probes[l].current_star, obscuration)) {
             if (probes[l].backtrack(i * (PI / 180)) == -1) {
@@ -215,7 +211,7 @@ void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<
   }
 }
 
-void transform_and_print(vector<Probe> probes, StarGroup group, int obscuration_type) {
+void transform_and_print(vector<Probe> probes, StarGroup group, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     // group.stars[i].point().print("red");
     
@@ -225,13 +221,12 @@ void transform_and_print(vector<Probe> probes, StarGroup group, int obscuration_
     }
   }
 
-  if (obscuration_type != DGNF) {
-    Polygon obscuration = get_obscuration(obscuration_type);
+  if (!obscuration.points.empty()) {
     obscuration.polyprint();
   }
 }
 
-void track_and_print_probes(vector<Probe> probes, StarGroup group, int obscuration_type) {
+void track_and_print_probes(vector<Probe> probes, StarGroup group, Polygon obscuration) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
     probes[k].base_star    = group.stars[k];
@@ -246,7 +241,7 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group, int obscurati
       probes[j].used_transfers.clear();
     }
 
-    while (has_collisions_with_current_stars(probes, obscuration_type)) {
+    while (has_collisions_with_current_stars(probes, obscuration)) {
       if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
                              probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
         if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
@@ -267,9 +262,9 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group, int obscurati
         }
       }
 
-      if (obscuration_type != DGNF) {
+      if (!obscuration.points.empty()) {
         for (int l=0; l<probes.size(); l++) {
-          if (star_is_obscured(probes[l].current_star, get_obscuration(obscuration_type))) {
+          if (star_is_obscured(probes[l].current_star, obscuration)) {
             if (probes[l].backtrack(i * (PI / 180)) == -1) {
               nobacktrack = true;
               break;
@@ -281,20 +276,20 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group, int obscurati
       if (nobacktrack) { break; }
     }
 
-    print_with_current_stars(probes, obscuration_type);
+    print_with_current_stars(probes, obscuration);
   }
 }
 
 bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
-                              double wfsmag, double gdrmag, int obscuration_type) {
+                              double wfsmag, double gdrmag, Polygon obscuration) {
   CombinationGenerator stargroups(get_list_sizes(probestars));
 
   while ( !stargroups.done ) {
     StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
     
     if (current_group.valid(wfsmag, gdrmag)) {
-      if ( !has_collisions_in_parts(current_group, probes, obscuration_type, N_OK_OBSCRD_FOR_4PROBE) ) {
-        transform_and_print(probes, current_group, obscuration_type);
+      if ( !has_collisions_in_parts(current_group, probes, obscuration, N_OK_OBSCRD_FOR_4PROBE) ) {
+        // transform_and_print(probes, current_group, obscuration);
         return true;
       }
     }
@@ -304,7 +299,7 @@ bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probest
 }
 
 bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
-                            double wfsmag, double gdrmag, int obscuration_type) {
+                            double wfsmag, double gdrmag, Polygon obscuration) {
 
     CombinationGenerator stargroups(get_list_sizes(probestars));
   
@@ -322,7 +317,7 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
 
 
       if (current_group.valid(wfsmag, gdrmag)) {
-        if ( !has_collisions_in_parts(current_group, probes, obscuration_type, N_OK_OBSCRD_FOR_4PROBE) ) {
+        if ( !has_collisions_in_parts(current_group, probes, obscuration, N_OK_OBSCRD_FOR_4PROBE) ) {
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
 
           // add nobacktrack logic
@@ -338,8 +333,8 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
             continue;
           }
 
-          if (trackable(probes, current_group, wfsmag, gdrmag, obscuration_type)) {
-            track_and_print_probes(probes, current_group, obscuration_type);
+          if (trackable(probes, current_group, wfsmag, gdrmag, obscuration)) {
+            // track_and_print_probes(probes, current_group, obscuration);
             return true;
           }
         }
@@ -349,7 +344,7 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
     return false;
 }
 
-bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probes, double maglim) {
+bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probes, double maglim, Polygon M3) {
   for (int i=0; i<probestars.size(); i++) {
     probestars[i].push_back(probes[i].default_star);
   }
@@ -360,7 +355,7 @@ bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probe
     StarGroup current_group = StarGroup(apply_indices(probestars, stargroups.next()));
 
     if (current_group.valid_for_phasing(maglim)) {
-      if ( !has_collisions_in_parts(current_group, probes, M3_OBSCURATION, N_OK_OBSCRD_FOR_PHASING) ) {
+      if ( !has_collisions_in_parts(current_group, probes, M3, N_OK_OBSCRD_FOR_PHASING) ) {
         return true;
       }
     }
@@ -452,7 +447,8 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   fout.close();
 }
 
-int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probes, int maglim, int nfiles) {
+int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probes,
+                               int maglim, int nfiles, Polygon M3) {
   int valid_files = 0;
 
   for (int i=0; i<nfiles; i++) {
@@ -461,7 +457,7 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
     vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
     vector< vector<Star> > current_bin = probestars_in_bin(probestars, maglim);
 
-    if (is_valid_phasing_mag(current_bin, probes, maglim)) {
+    if (is_valid_phasing_mag(current_bin, probes, maglim, M3)) {
       valid_files++;
       ostringstream starfile;
       starfile << "starfiles_m3/starfield" << valid_files << ".cat";
@@ -477,11 +473,11 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
 }
 
 int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes, int wfsmag, int gdrmag,
-                              int nfiles, int obscuration_type, bool tracking) {
+                              int nfiles, Polygon obscuration, bool tracking) {
   int valid_files = 0;
 
   bool (*is_valid_pair)(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
-                        double wfsmag, double gdrmag, int obscuration_type);
+                        double wfsmag, double gdrmag, Polygon obscuration);
 
   is_valid_pair = is_valid_pair_notracking;
   if (tracking) {
@@ -494,7 +490,7 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
     vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
     vector< vector<Star> > current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
 
-    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration_type)) {
+    if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration)) {
       valid_files++;
       ostringstream starfile;
       starfile << "starfiles_m3/starfield" << valid_files << ".cat";
@@ -509,13 +505,16 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
   return valid_files;
 }
 
+Polygon get_m3_obscuration() {
+  return load_poly("m3_obsc.txt");
+}
+
+Polygon get_gclef_obscuration() {
+  return load_poly("gclef_obsc.txt");
+}
+
 
 int main(int argc, char *argv[]) {
-  // Probe probe1(0);
-  // Probe probe2(90);
-  // Probe probe3(180);
-  // Probe probe4(-90);
-
   string slider_body_file  = "probe_slider_body.txt";
   string slider_shaft_file = "probe_slider_shaft.txt";
   string baffle_tube_file  = "probe_baffle_tube.txt";
@@ -545,6 +544,10 @@ int main(int argc, char *argv[]) {
 
   vector<Star>  stars;
 
+  Polygon GCLEF = get_gclef_obscuration();
+  Polygon M3    = get_m3_obscuration();
+  Polygon DGNF;
+
   /**
   arg format:
       ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <wfsmag> <gdrmag> <nfiles>
@@ -557,9 +560,9 @@ int main(int argc, char *argv[]) {
   argv[5] -> number of files to test
   **/
   
-  bool phasing, tracking;
-  int  obscuration_type;
-  int  wfsmag, gdrmag, nfiles;
+  bool    phasing, tracking;
+  Polygon obscuration;
+  int     wfsmag, gdrmag, nfiles;
 
   if (argc < 7) {
     cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <wfsmag> <gdrmag> <nfiles>" << endl;
@@ -572,11 +575,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(argv[2], "--gclef") == 0) {
-      obscuration_type = GCLEF_OBSCURATION;
+      obscuration = GCLEF;
     } else if (strcmp(argv[2], "--m3") == 0) {
-      obscuration_type = M3_OBSCURATION;
+      obscuration = M3;
     } else {
-      obscuration_type = DGNF;
+      obscuration = DGNF;
     }
 
     if (strcmp(argv[3], "--track") == 0) {
@@ -594,9 +597,9 @@ int main(int argc, char *argv[]) {
 
   double valid_files = 0;
   if (phasing) {
-    valid_files = number_valid_phasing_files(starfield_files, probes, wfsmag, nfiles);
+    valid_files = number_valid_phasing_files(starfield_files, probes, wfsmag, nfiles, M3);
   } else {
-    valid_files = number_valid_4probe_files(starfield_files, probes, wfsmag, gdrmag, nfiles, obscuration_type, tracking);
+    valid_files = number_valid_4probe_files(starfield_files, probes, wfsmag, gdrmag, nfiles, obscuration, tracking);
   }
 
   cerr << valid_files / nfiles << endl;

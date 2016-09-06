@@ -124,9 +124,7 @@ bool star_is_obscured(Star s, Polygon obscuration) {
   return false;
 }
 
-bool config_is_obscured_with_current_stars(vector<Probe> probes, int obscuration_type) {
-  Polygon obscuration = get_obscuration(obscuration_type);
-
+bool config_is_obscured_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     if (star_is_obscured(probes[i].current_star, obscuration)) {
       return true;
@@ -136,9 +134,7 @@ bool config_is_obscured_with_current_stars(vector<Probe> probes, int obscuration
   return false;
 }
 
-bool config_is_obscured(StarGroup group, vector<Probe> probes, int obscuration_type, int max_obscured) {
-  Polygon obscuration = get_obscuration(obscuration_type);
-
+bool config_is_obscured(StarGroup group, vector<Probe> probes, Polygon obscuration, int max_obscured) {
   int obscured_probes = 0;
   for (int i=0; i<group.stars.size(); i++) {
     if (star_is_obscured(group.stars[i], obscuration)) {
@@ -153,7 +149,7 @@ bool config_is_obscured(StarGroup group, vector<Probe> probes, int obscuration_t
   return false;
 }
 
-int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int obscuration_type, int max_obscured) {
+int has_collisions_in_parts(StarGroup group, vector<Probe> probes, Polygon obscuration, int max_obscured) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
 
@@ -168,8 +164,8 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int obscurati
     }
   }
 
-  if (obscuration_type != 0) {
-    if (config_is_obscured(group, probes, obscuration_type, max_obscured)) {
+  if (!obscuration.points.empty()) {
+    if (config_is_obscured(group, probes, obscuration, max_obscured)) {
       return true;
     }
   }
@@ -193,7 +189,7 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes, int obscurati
   return 0;
 }
 
-int has_collisions_with_current_stars(vector<Probe> probes, int obscuration_type) {
+int has_collisions_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
 
@@ -209,8 +205,8 @@ int has_collisions_with_current_stars(vector<Probe> probes, int obscuration_type
     }
   }
 
-  if (obscuration_type != 0) {
-    if (config_is_obscured_with_current_stars(probes, obscuration_type)) {
+  if (!obscuration.points.empty()) {
+    if (config_is_obscured_with_current_stars(probes, obscuration)) {
       return true;
     }
   }
@@ -233,30 +229,3 @@ int has_collisions_with_current_stars(vector<Probe> probes, int obscuration_type
 
   return 0;
 }
-
-int has_collisions(StarGroup group, vector<Probe> probes) {
-  vector<Polygon> polygons;
-  Probe prb;
-  Star  star;
-  int i;
-
-  for (i=0; i<group.stars.size(); i++) {
-    prb  = probes[i];
-    star = group.stars[i];
-    polygons.push_back(prb.transform(star.point()));
-    // polygons[i].polyprint();
-  }
-
-  if (colliding(polygons[0], polygons[polygons.size()-1])) {
-    return 1;
-  }
-  for (i=0; i<polygons.size()-1; i++) {
-    if (colliding(polygons[i], polygons[i+1])) {
-      return 1;
-    }
-  }
-
-  // for (i=0; i<group.stars.size(); i++) {polygons[i].polyprint();}
-  return 0;
-}
-

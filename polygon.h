@@ -15,7 +15,6 @@ class Edge {
   
   Point a, b;
 
-  // Move this to the Vector class eventually
   Point normal();
 };
 

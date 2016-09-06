@@ -3,8 +3,8 @@ import sys
 import starbase
 from numpy import *
 
-if len(sys.argv) < 3:
-    print "example:\npython plotgrid.py <probability file> <png output file>"
+if len(sys.argv) < 4:
+    print "example:\npython plotgrid.py <probability file> <png output file> <title>"
     sys.exit(0)
 
 tab = starbase.Starbase(sys.argv[1])
@@ -21,7 +21,7 @@ w = arange(wmin, wmax+1)
 X, Y = meshgrid(w, g)
 
 configs = ["dgnf"]
-labels  = ["Direct Gregorian"]
+labels  = [sys.argv[3]]
 
 ii={}
 axlist=[]
