@@ -1,118 +1,95 @@
-## General
+## Skycover
 
-This code is for simulating the probe arms over the primary mirrors of
-the [GMT](http://www.gmto.org/), and determining the probability of
-finding sufficiently bright stars for the active optics system.
+This code is for simulating the probes that collect light for the
+Aquisition Guide Star and Wave Front Sensing (AGWS) system of the
+Giant Magellan Telescope (GMT). The goal of this project is to
+determine the probabilities of finding sufficiently bright stars for
+doing wavefront sensing.
 
 ## Running
 
-I initially wrote this program on OS X 10.11.4 (El Capitan). This is
-what I get when I run `g++ --version`.
+I wrote this code on OS X 10.11.4 (El Capitan). This is what I get
+when I run `g++ --version`.
 
-    Configured with:
-    --prefix=/Applications/Xcode.app/Contents/Developer/usr
-    --with-gxx-include-dir=/usr/include/c++/4.2.1
-    Apple LLVM version 6.1.0 (clang-602.0.53) (based on LLVM 3.6.0svn)
-    Target: x86_64-apple-darwin15.4.0
+    Configured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/usr/
+    include/c++/4.2.1                                                                                   
+    Apple LLVM version 7.3.0 (clang-703.0.31)
+    Target: x86_64-apple-darwin15.6.0
     Thread model: posix
+    InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
 
-I have also successfully compiled and run the program on Ubuntu 14.04
-64-bit.
+To build the project, run `make` in the top level directory. This will
+compile an executable named <b>skycov</b>.
 
-To build the project, run `make` in the project directory. This will
-compile an executable named <b>skycov</b>. Type `./skycov` to run.
+The program takes six command line arguments, all mandatory. Here is
+the usage message:
 
-The program takes one command line argument, a regular expresion to
-match against files in the Bes2 directory. If no regular expression is
-given, the program will process every file.
+    usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <wfsmag> <gdrmag> <nfiles>
 
-The program will read in star field data from star catalogues in Bes2,
-and compute the probabilities of finding guide star/wave front star
-combinations where the positions of the probes are such that there are
-no collisions. There must be three wave front stars of the same
-magnitude for the combination to be valid.
+And brief explanations of the arguments:
 
-Output looks something like this:
+    arg 1: regular simulation or phasing
+    arg 2: obscuration type. '--dgnf' for no obscuration
+    arg 3: tracking or notracking
+    arg 3: wfsmag
+    arg 4: gdrmag
+    arg 5: number of files to test
 
-    grid    config    wfsmag    gdrmag    prob
-    ----    ------    ------    ------    ----
-    grid    dgnf      13        14        0.0952381
-    grid    dgnf      13        15        0.0952381
-    grid    dgnf      13        16        0.0952381
-    grid    dgnf      13        17        0.0952381
-    grid    dgnf      13        18        0.0952381
-    grid    dgnf      13        19        0.0952381
-    grid    dgnf      14        13        0.0952381
-    grid    dgnf      14        14        0.190476
-    grid    dgnf      14        15        0.238095
-    grid    dgnf      14        16        0.238095
-    grid    dgnf      14        17        0.238095
-    grid    dgnf      14        18        0.238095
-    grid    dgnf      14        19        0.238095
-    grid    dgnf      15        13        0.238095
-    grid    dgnf      15        14        0.380952
-    grid    dgnf      15        15        0.47619
-    grid    dgnf      15        16        0.52381
-    grid    dgnf      15        17        0.571429
-    grid    dgnf      15        18        0.619048
-    grid    dgnf      15        19        0.619048
-    grid    dgnf      16        13        0.428571
-    grid    dgnf      16        14        0.761905
-    grid    dgnf      16        15        0.857143
-    grid    dgnf      16        16        0.857143
-    grid    dgnf      16        17        0.952381
-    grid    dgnf      16        18        0.952381
-    grid    dgnf      16        19        0.952381
-    grid    dgnf      17        13        0.666667
-    grid    dgnf      17        14        0.857143
-    grid    dgnf      17        15        0.952381
-    grid    dgnf      17        16        0.952381
-    grid    dgnf      17        17        1
-    grid    dgnf      17        18        1
-    grid    dgnf      17        19        1
-    grid    dgnf      18        13        0.714286
-    grid    dgnf      18        14        0.904762
-    grid    dgnf      18        15        1
-    grid    dgnf      18        16        1
-    grid    dgnf      18        17        1
-    grid    dgnf      18        18        1
-    grid    dgnf      18        19        1
-    grid    dgnf      19        13        0.714286
-    grid    dgnf      19        14        0.904762
-    grid    dgnf      19        15        1
-    grid    dgnf      19        16        1
-    grid    dgnf      19        17        1
-    grid    dgnf      19        18        1
-    grid    dgnf      19        19        1
+The program will read in star field data from the star catalogues in
+the <b>Bes</b> directory, and return the probability of finding the
+given wave-front/guide-star magnitude pair in any one of the
+files. The probability formula is
 
-The output can be plotted with the python script in plotgrid.py. In
-order to do so, pipe the output of the program to a file.
+    (# of valid files) / (# of files tested)
 
-    ./skycov > dogrid.results.4probe
+The validity of a file depends on which test is being run. There are
+two test types, <b>4probe</b> and <b>phasing</b>.
 
-Then run the plotting script on the file, passing in the name of the
-image file to write
+For the <b>4probe</b> test, a valid file contains a configuration of
+stars such that three probes can reach a star of at least the given
+wave-front magnitude, and one probe can reach a star of at least the
+given guide-star magnitude. A valid configuration must also be one
+where none of the probes are colliding with each other, or are blocked
+by an obscuration.
 
-    python plotgrid.py dogrid.results.4probe maglim.bare.dgnf.png
+For the <b>phasing</b> test, only three probes need to be able to
+reach a star of at least the given wave-front magnitude. The
+guide-star magnitude is ignored in this case. The phasing test also
+takes into account probe collisions and obscuration by M3.
 
-The result of plotting looks something like this.
+The second command line argument determines which obscuration, if any,
+will be used. Passing in '--gclef' will cause an obscuration polygon
+to be read out of the file 'gclef_obsc.txt'. Passing in '--m3' will
+cause an obscuration polygon to be read out of 'm3_obsc.txt'. And
+passing in '--dgnf' will cause no obscuration to be used, as there is
+no obscuration to take into account in the direct gregorian narrow
+field configuration.
 
-![maglim.bare.dgnf.png](maglim.bare.dgnf.png)
+The format of the obscuration files must be one ordered pair per line,
+with x and y coordinates separated by a single tab.
 
-## Future Improvements
+Ex. gclef_obsc.txt
 
-Some things are currently hardcoded into the program that shouldn't
-be.
+    -306.63	1388.34
+    330.15	-149
+    -128.09	-338.81
+    -764.88	1198.53
 
-The first is the geometry of the probes. Since the design of the
-probes is still changing week to week, it will be beneficial to be
-able to specify a text file from which to read probe geometries. This
-will be included in the next version of the program.
+The order of the points given in the obscuration file should follow
+clockwise or counterclockwise order around the polygon, as the
+geometry algorithms in the program use this format to reason about
+polygons.
 
-Another hardcoded piece is the output of the program. Usually it is
-useful to simply output the probabilities in the format given above.
-But when testing the correctness of the program, it can be helpful to
-output the coordinates of the probes as they are moved into different
-configurations. This should be a pretty simple flag to pass in that
-will determine the output, and will likely be included in the next
-version of the program.
+The third command line argument toggles the tracking test. The
+tracking configuration tests whether all four probes are able to
+follow a bright enough star as the field of view rotates for 60
+degrees above the stationary mirror. This means for the <b>4probe</b>
+configuration, three probes must follow a star at least as bright as
+the given wave-front magnitude, and one probe must follow a star at
+least as bright as the given guide-star magnitude. A caveat of the
+tracking configuration is that any probe may 'backtrack' to another
+star of sufficient magnitude if the star it is currently following
+leaves its range. This backtracking ability is simulated in the
+program, and as usual probe collisions and obscuration are taken into
+account.
+
