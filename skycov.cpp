@@ -25,6 +25,7 @@ using namespace std;
 #define N_OK_OBSCRD_FOR_PHASING 1
 #define N_OK_OBSCRD_FOR_4PROBE  0
 
+bool PRINT = false;
 
 vector<int> get_list_sizes(vector< vector<Star> > lists) {
     int i;
@@ -132,7 +133,6 @@ void print_with_current_stars(vector<Probe> probes, Polygon obscuration) {
     transformed_parts[1].polyprint();
     transformed_parts[0].polyprint();
     transformed_parts[2].polyprint();
-    // probes[i].Base.polyprint();
   }
 
   if (!obscuration.points.empty()) {
@@ -289,7 +289,9 @@ bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probest
     
     if (current_group.valid(wfsmag, gdrmag)) {
       if ( !has_collisions_in_parts(current_group, probes, obscuration, N_OK_OBSCRD_FOR_4PROBE) ) {
-        // transform_and_print(probes, current_group, obscuration);
+        if (PRINT) {
+          transform_and_print(probes, current_group, obscuration); 
+        }
         return true;
       }
     }
@@ -334,7 +336,9 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
           }
 
           if (trackable(probes, current_group, wfsmag, gdrmag, obscuration)) {
-            // track_and_print_probes(probes, current_group, obscuration);
+            if (PRINT) {
+              track_and_print_probes(probes, current_group, obscuration); 
+            }
             return true;
           }
         }
@@ -460,11 +464,11 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
     if (is_valid_phasing_mag(current_bin, probes, maglim, M3)) {
       valid_files++;
       ostringstream starfile;
-      starfile << "starfiles_m3/starfield" << valid_files << ".cat";
+      starfile << "starfiles/starfield" << valid_files << ".cat";
       write_stars(stars, starfile.str(), maglim, maglim);
     } else {
       ostringstream starfile;
-      starfile << "starfiles_m3/starfield" << valid_files << "_invalid.cat";
+      starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
       write_stars(stars, starfile.str(), maglim, maglim);
     }
   }
@@ -493,11 +497,11 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
     if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration)) {
       valid_files++;
       ostringstream starfile;
-      starfile << "starfiles_m3/starfield" << valid_files << ".cat";
+      starfile << "starfiles/starfield" << valid_files << ".cat";
       write_stars(stars, starfile.str(), wfsmag, gdrmag);
     } else {
       ostringstream starfile;
-      starfile << "starfiles_m3/starfield" << valid_files << "_invalid.cat";
+      starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
       write_stars(stars, starfile.str(), wfsmag, gdrmag);
     }
   }
@@ -555,17 +559,18 @@ int main(int argc, char *argv[]) {
   argv[1] -> regular simulation or phasing
   argv[2] -> obscuration type. '--dgnf' for no obscuration
   argv[3] -> tracking or notracking
-  argv[3] -> wfsmag
-  argv[4] -> gdrmag
-  argv[5] -> number of files to test
+  argv[4] -> print configurations or not
+  argv[5] -> wfsmag
+  argv[6] -> gdrmag
+  argv[7] -> number of files to test
   **/
   
   bool    phasing, tracking;
   Polygon obscuration;
   int     wfsmag, gdrmag, nfiles;
 
-  if (argc < 7) {
-    cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <wfsmag> <gdrmag> <nfiles>" << endl;
+  if (argc < 8) {
+    cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <--print | --noprint> <wfsmag> <gdrmag> <nfiles>" << endl;
     return 0;
   } else {
     if (strcmp(argv[1], "--phasing") == 0) {
@@ -588,9 +593,13 @@ int main(int argc, char *argv[]) {
       tracking = false;
     }
 
-    wfsmag = atoi(argv[4]);
-    gdrmag = atoi(argv[5]);
-    nfiles = atoi(argv[6]);
+    if (strcmp(argv[4], "--print") == 0) {
+      PRINT = true;
+    }
+
+    wfsmag = atoi(argv[5]);
+    gdrmag = atoi(argv[6]);
+    nfiles = atoi(argv[7]);
   }
 
   vector<string> starfield_files = files_in_dir("Bes/", ".*");

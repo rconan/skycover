@@ -21,19 +21,20 @@ when I run `g++ --version`.
 To build the project, run `make` in the top level directory. This will
 compile an executable named <b>skycov</b>.
 
-The program takes six command line arguments, all mandatory. Here is
+The program takes seven command line arguments, all mandatory. Here is
 the usage message:
 
-    usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <wfsmag> <gdrmag> <nfiles>
+    usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <--print | --noprint> <wfsmag> <gdrmag> <nfiles>
 
 And brief explanations of the arguments:
 
     arg 1: regular simulation or phasing
     arg 2: obscuration type. '--dgnf' for no obscuration
     arg 3: tracking or notracking
-    arg 3: wfsmag
-    arg 4: gdrmag
-    arg 5: number of files to test
+    arg 4: print configurations or not
+    arg 5: wfsmag
+    arg 6: gdrmag
+    arg 7: number of files to test
 
 The program will read in star field data from the star catalogues in
 the <b>Bes</b> directory, and return the probability of finding the
@@ -92,4 +93,50 @@ star of sufficient magnitude if the star it is currently following
 leaves its range. This backtracking ability is simulated in the
 program, and as usual probe collisions and obscuration are taken into
 account.
+
+The fourth command line argument tells the program whether or not you
+want the coordinates of each probe and obscuration to be printed out
+at every valid configuration. For the non-tracking test, this results
+in a single frame of animation per valid configuration. For the
+tracking test, this results in 60 frames of animation per valid
+configuration.
+
+When using the --print option, it's a good idea to redirect output to
+some output file. Example
+
+     ./skycov --4probe --gclef --track --print 14 15 10 > sky.out
+
+Since the resulting probability will be printed to stderr, you get
+your answer and the printed coordinates in separate locations.
+
+## Running a full test
+
+I've include two scripts, <b>run4probe.sh</b> and
+<b>runphasing.sh</b>, that will test a whole range of magnitudes at
+once. <b>run4probe.sh</b> tests all possible wfs/gdr magnitude pairs
+between 13 and 19, inclusive. <b>runphasing.sh</b> tests all wfs
+magnitudes between 13 and 19. The 4probe script takes the same
+arguments as the skycov executable, minus the simulation type and
+given magnitudes.
+
+    ./run4probe <--gclef | --m3> <--notrack | --track> <nfiles>
+
+The phasing script takes only the number of files to test, as the
+phasing configuration must use M3 and does not do tracking.
+
+    ./runphasing <nfiles>
+
+## Probe geometry
+
+The four probes are identical in shape, and are described by the
+polygon files 'probe_slider_body.txt', 'probe_slider_shaft.txt', and
+'probe_baffle_tube.txt'. Each file contains one of three polygons that
+make up the probe's geometry. The probe described as these polygons is
+rotated about the origin to describe the other three probes.
+
+There are two reasons the probes are described as multiple
+polygons. First, the baffle tube extends and contracts based on the
+radial distance of the probe's star from the origin. Second, the
+polygon intersection algorithm used by the program cannot handle
+concave shapes.
 

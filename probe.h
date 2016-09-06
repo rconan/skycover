@@ -65,7 +65,6 @@ double angle_between_vectors(Point a, Point b);
 int quadrant(Point p);
 vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1);
 Point scale(Point u, double m);
-Polygon graham_scan(vector<Polygon> polygons);
 bool safe_distance_from_center(Star s);
 Polygon get_gclef_obscuration();
 Polygon get_m3_obscuration();
