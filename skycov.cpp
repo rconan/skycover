@@ -523,10 +523,10 @@ int main(int argc, char *argv[]) {
   string slider_shaft_file = "probe_slider_shaft.txt";
   string baffle_tube_file  = "probe_baffle_tube.txt";
 
-  Probe probe1(0,   10, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe2(90,  10, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe3(180, 10, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe4(270, 10, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe1(0,   25, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe2(90,  25, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe3(180, 25, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe4(270, 25, slider_body_file, slider_shaft_file, baffle_tube_file);
 
   Star probe1default(0,     1000,  20, 0);
   Star probe2default(-1000, 0,     20, 0);
