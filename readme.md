@@ -146,3 +146,9 @@ These plots display the results of running the simulation in different
 configurations.
 
 ![DGNF - No Tracking (10mm buffer)](plots/4probe_100dgnf_notrack_10mm.png)
+
+![M3 - No Tracking (10mm buffer)](plots/4probe_100m3_notrack_10mm.png)
+
+![M3 - Tracking (10mm buffer)](plots/4probe_100m3_track_10mm.png)
+
+![GCLEF - Tracking (10mm buffer)](plots/4probe_100gclef_track_10mm.png)
