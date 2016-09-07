@@ -140,3 +140,9 @@ radial distance of the probe's star from the origin. Second, the
 polygon intersection algorithm used by the program cannot handle
 concave shapes.
 
+## Results
+
+These plots display the results of running the simulation in different
+configurations.
+
+![DGNF - No Tracking (10mm buffer)](plots/4probe_100dgnf_notrack_10mm.png)
