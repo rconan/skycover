@@ -1,10 +1,11 @@
-function iterprobes_tracking(filename, starfield_dir, wsize)
+function iterprobes_tracking(filename)
 
-    probes = read_polygons(filename, [4 4 4 4]);
+    dims = [4 4 4 4];
+    probes = read_polygons(filename, dims);
     
     figure; hold on;
-    ylim([-wsize, wsize]);
-    xlim([-wsize, wsize]);
+    ylim([-2000, 2000]);
+    xlim([-2000, 2000]);
     axis equal;
     plot(0, 0);
     grid on;

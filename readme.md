@@ -111,7 +111,7 @@ your answer and the printed coordinates in separate locations.
 
 ## Running a full test
 
-I've include two scripts, <b>run4probe.sh</b> and
+I've included two scripts, <b>run4probe.sh</b> and
 <b>runphasing.sh</b>, that will test a whole range of magnitudes at
 once. <b>run4probe.sh</b> tests all possible wfs/gdr magnitude pairs
 between 13 and 19, inclusive. <b>runphasing.sh</b> tests all wfs
@@ -152,3 +152,59 @@ configurations.
 ![M3 - Tracking (10mm buffer)](plots/4probe_100m3_track_10mm.png)
 
 ![GCLEF - Tracking (10mm buffer)](plots/4probe_100gclef_track_10mm.png)
+
+## Visual Simulation
+
+The '--print' option enables viewing the valid configurations found by
+the program. When printing is turned on, the program will output the
+coordinates of all the polygons in the system whenever a valid
+configuration is found. This means for the non-tracking setting, a
+single set of coordinates will be printed out for each polygon in the
+system. For the tracking setting, a set of coordinates will be printed
+out for every polygon in the system, for every one of 60 positions
+along the 60 degree tracking path.
+
+The coordinates of a polygon are printed out in ordered pairs in a
+single line. The m3 obscuration is printed out like this
+
+    (829.100000, 918.240000) (80.740000, 66.650000) (10.100000, 104.200000) (297.630000, 1200.830000) 
+
+I've included matlab scripts that will plot the configurations output
+by the simulation program. But since the coordinates are output as
+text it's possible to write a parser/plotter in any language.
+
+This is a frame displaying one valid configuration output by the
+command
+
+    ./skycove --4probe --m3 --notrack --print 15 15 10 > sky.out
+
+![Valid config. example](/plots/valid_config_ex.png)
+
+To run the visual simulations, open matlab and cd to the matlab
+directory. To run a non-tracking simulation, run
+`iterprobes('../sky.out')`. The argument to iterprobes is the file
+containing the polygon coordinates printed out by the simulation. To
+run a tracking simulation, run
+`iterprobes_tracking('../sky.out')`. The argument is the same.
+
+Beware there are a few limitations of the matlab scripts that I
+haven't found a good way to abstract away. If you would like to
+simulate a dgnf test, you must go into the file, either iterprobes.m
+or iterprobes_tracking.m, and change the 'dims' variable at the top of
+the script from [4 4 4 4] to [4 4 4] (that is, from four 4's to three
+4's). This is because the dgnf doesn't have an obscuration polygon to
+read out of the file. The 'dims' variable gives the number of point on
+the polygons described in the file.
+
+Another thing you must do if you would like to run a dgnf visual
+simulation is go into the file, iterprobes.m or iterprobes_tracking.m,
+and change the 'npolygons' variable from 13 to 12. This tells the
+script to display 12 polygons (3 for each probe) per frame, instead of
+13 (3 for each probe plus the obscuration).
+
+The blue dots in the picture represent stars. These stars are read
+from conventionally named text files in the 'starfiles'
+directory. Each run of the simulation overwrites these files to
+contain the starfields from valid files found during that
+simulation. So the simulation might look off if you are viewing
+polygons from a few simulations ago.

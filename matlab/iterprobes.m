@@ -26,7 +26,7 @@ function iterprobes(filename, varargin)
         
     colors = [sgidarkgray; dimgray; darkgrey];
 
-    npolygons = 12;
+    npolygons = 13;
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     
@@ -42,7 +42,6 @@ function iterprobes(filename, varargin)
              
         % set(h, 'facealpha', 0.5);
     end
-
     
     for i=1:nconfigurations
         starfile = sprintf('../starfiles/starfield%d.cat', i);

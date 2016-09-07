@@ -2,7 +2,6 @@ function polys = read_polygons(filename, dimensions)
     fid = fopen(filename, 'r');
     ndims = size(dimensions, 2);
     
-    formatters = arrayfun(@(i) coord_reader(dimensions(i)), 1:ndims, 'UniformOutput', false);
     formatter = coord_reader(max(dimensions));
 
     data = [];

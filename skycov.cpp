@@ -468,8 +468,8 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
       write_stars(stars, starfile.str(), maglim, maglim);
     } else {
       ostringstream starfile;
-      starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
-      write_stars(stars, starfile.str(), maglim, maglim);
+      // starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
+      // write_stars(stars, starfile.str(), maglim, maglim);
     }
   }
   
@@ -501,8 +501,8 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
       write_stars(stars, starfile.str(), wfsmag, gdrmag);
     } else {
       ostringstream starfile;
-      starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
-      write_stars(stars, starfile.str(), wfsmag, gdrmag);
+      // starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
+      // write_stars(stars, starfile.str(), wfsmag, gdrmag);
     }
   }
   
