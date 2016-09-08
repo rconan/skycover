@@ -27,6 +27,14 @@ using namespace std;
 
 bool PRINT = false;
 
+/**
+   Params:  vector of Star vectors.
+   Returns: vector of ints denoting the size of each given Star vector.
+   
+   This function is used to get the sizes of the Star lists passed to
+   the CombinationGenerator, which generates combinations of stars the
+   probes can move to.
+ **/
 vector<int> get_list_sizes(vector< vector<Star> > lists) {
     int i;
     vector<int> result;
@@ -38,6 +46,9 @@ vector<int> get_list_sizes(vector< vector<Star> > lists) {
     return result;
 }
 
+/**
+   Filter a list of stars for those that are in range of the given probe.
+**/
 vector<Star> in_probe_range(vector<Star> stars, Probe probe, double probe_angle) {
   vector<Star> result;
   int i;
@@ -53,6 +64,10 @@ vector<Star> in_probe_range(vector<Star> stars, Probe probe, double probe_angle)
   return result;
 }
 
+/**
+   Partition function for the quicksort used in sorting stars.
+   Sorts by angle from the vector <0, 1>.
+**/
 int partition(vector<Star>& stars, int p, int q)
 {
   Point origin(0, 1);
@@ -75,6 +90,9 @@ int partition(vector<Star>& stars, int p, int q)
     return i;
 }
 
+/**
+   Implementation of quicksort on the Star type.
+**/
 void star_sort(vector<Star>& stars, int p, int q)
 {
     int r;
@@ -86,6 +104,11 @@ void star_sort(vector<Star>& stars, int p, int q)
     }
 }
 
+/**
+   Populate a list of Star lists containing stars that are in range of the probes.
+   The first Star list in the returned list contains Stars in range of the first probe,
+   and so on.
+**/
 vector< vector<Star> > get_probe_stars(vector<Star> stars, vector<Probe> probes) {
     int i;
     vector< vector<Star> > result;
@@ -103,6 +126,10 @@ vector< vector<Star> > get_probe_stars(vector<Star> stars, vector<Probe> probes)
     return result;
 }
 
+/**
+   Given lists of stars within each probe's reach, and a list of indices, return
+   the stars at the given indexes into the star lists.
+**/
 vector<Star> apply_indices(vector< vector<Star> > probestars, vector<int> indices) {
     int i;
     vector<Star> result;
@@ -114,25 +141,16 @@ vector<Star> apply_indices(vector< vector<Star> > probestars, vector<int> indice
     return result;
 }
 
-vector<Star> stars_in_angular_distance(Point p, vector<Star> stars, double dist) {
-  vector<Star> result;
-  for (Star s : stars) {
-    if (angle_between_vectors(p, s.point()) < dist) {
-      result.push_back(s);
-    }
-  }
-
-  star_sort(result, 0, result.size());
-
-  return result;
-}
-
+/**
+   Print all the polygons in the system given by each probe positioned over its
+   current_star attribute.
+**/
 void print_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     vector<Polygon> transformed_parts = probes[i].transform_parts(probes[i].current_star.point());
-    transformed_parts[1].polyprint();
-    transformed_parts[0].polyprint();
-    transformed_parts[2].polyprint();
+    for (Polygon part : transform_parts) {
+      part.polyprint();
+    }
   }
 
   if (!obscuration.points.empty()) {
@@ -140,7 +158,36 @@ void print_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   }
 }
 
+/**
+   Determine whether or not a configuration of probes can be tracked for the full 60 degrees.
 
+   - Set each probe's current_star and base_star to the corresponding Star in the group.
+   - Open up a loop that checks for collisions and necessary backtracks in one degree increments
+     for the full 60 degrees.
+
+     - At the top of the loop, ask each probe to track for the current number of degrees.
+     - Clear each probe's used transfers list because backtracks may change at every degree of
+       rotation.
+     - If a probe cannot reach any star at the current rotation, return false.
+
+     - Open up a loop that will run until either a configuration is found with no collisions/obscurations,
+       or we are unable to find any configuration with no collisions/obscurations.
+       
+         - Check for collisions between probes 1 and 4. If there is a collision, ask probe 4 to backtrack.
+         - If probe 4 is unable to backtrack, meaning there is no other star in its range, set the
+           'nobacktrack' flag to true and break.
+        
+         - Loop through each of the other pairs of probes (1 and 2, 2 and 3, 3 and 4) and perform the same
+           checks as those performed for the first and last probes.
+
+         - If there is an obscuration (meaning not DGNF configuration), check if any of the probes are
+           obscured in their current location. If so, set 'nobacktrack' and break.
+           
+         - If 'nobacktrack' was set in any of our loops, break because we hit a spot where backtrack was
+           needed but couldn't be found.
+           
+   - Return whether or not we were able to do a full track.
+**/
 bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Polygon obscuration) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
@@ -152,7 +199,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Po
 
   for (int i=0; i<MINIMUMTRACK_DEG; i++) {
     for (int j=0; j<probes.size(); j++) {
-      probes[j].track(i * (PI / 180));
+      // probes[j].track(i * (PI / 180));
       probes[j].used_transfers.clear();
       if (probes[j].track(i * (PI / 180)) == -1) {
         return false;
@@ -201,6 +248,11 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Po
   }
 }
 
+/**
+   If any of the probes in probes list cannot track their star for the full 60 degrees,
+   fill up their list of possible backward transfers. This list is all stars with magnitude
+   at least as bright as the dimmest magnitude between wfsmag and gdrmag.
+**/
 void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<Star> stars, int wfsmag, int gdrmag) {
   for (int i=0; i<probes.size(); i++) {
     double track_dist = probes[i].track_distance(group.stars[i]);
@@ -211,10 +263,13 @@ void populate_backward_transfers(vector<Probe> &probes, StarGroup group, vector<
   }
 }
 
+/**
+   Print all polygons in the system consisting of the probes transformed over their
+   corresponding stars in the StarGroup. Also print the obscuration if a non-null polygon
+   is given for it.
+**/
 void transform_and_print(vector<Probe> probes, StarGroup group, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
-    // group.stars[i].point().print("red");
-    
     vector<Polygon> transformed_parts = probes[i].transform_parts(group.stars[i].point());
     for (Polygon part : transformed_parts) {
       part.polyprint();
@@ -226,6 +281,10 @@ void transform_and_print(vector<Probe> probes, StarGroup group, Polygon obscurat
   }
 }
 
+/**
+   Perform the same logic as the function 'trackable', but print out the system at
+   every rotation in one degree increments.
+**/
 void track_and_print_probes(vector<Probe> probes, StarGroup group, Polygon obscuration) {
   for (int k=0; k<probes.size(); k++) {
     probes[k].current_star = group.stars[k];
@@ -280,6 +339,21 @@ void track_and_print_probes(vector<Probe> probes, StarGroup group, Polygon obscu
   }
 }
 
+/**
+   Determine whether the given star field contains a valid no-tracking configuration for the
+   given wavefront sensor/guide star magnitude pair.
+   
+   - Create a CombinationGenerator which will hand back index lists giving the next combination
+     of stars for the probes to move to.
+     
+   - Open up a loop that will run until all combinations have been checked, or a valid combination
+     has been found.
+     
+     - At the top of the loop get the next combination of stars.
+     - Check whether those stars satisfy the 3-wavefront senor, 1-guide star magnitude constraint.
+     - Check for any collisions/obscurations at that configuration.
+     - If these tests pass, return true. Print the configuration if the PRINT flag is set.
+**/
 bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
                               double wfsmag, double gdrmag, Polygon obscuration) {
   CombinationGenerator stargroups(get_list_sizes(probestars));
@@ -300,6 +374,36 @@ bool is_valid_pair_notracking(vector<Star> stars, vector< vector<Star> > probest
   return false;
 }
 
+/**
+   Determine whether the given star field contains a valid tracking configuration for the given
+   wavefront sensor/guide star magnitude pair.
+   
+   - Create a CombinationGenerator which will hand back index lists giving the next combination
+     of stars for the probes to move to.
+     
+   - Open up a loop that will run until all combinations have been checked, or a valid combination
+     has been found.
+     
+     - At the top of the loop reset each probe's needs_transfer flag to false. If a probe had previously
+       needed a backward transfer, it would have done so and now needs to be checked again given its
+       new position.
+       
+     - Ask the combination generator for the next configuration of stars.
+     - Setup the probes for testing the next configuration by clearing their backtrack lists and setting
+       their current_star to reflect the new group.
+       
+     - Check if the current group of stars has valid magnitudes (3 wfs and 1 gdr for regular. 3 wfs for
+       phasing).
+     - Check for any collisions/obscurations in the initial configuration.
+     - Populate the backward transfer lists for any of the probes that will need it.
+     
+     - If a probe needs a transfer but has no stars in its transfer list, the configuration won't work,
+       so we go on to the next one.
+       
+     - Call the trackable() function which traces the configuration through the full 60 degrees of tracking
+       and determines whether the configuration is valid.
+   
+**/
 bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestars, vector<Probe> probes,
                             double wfsmag, double gdrmag, Polygon obscuration) {
 
@@ -317,12 +421,10 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
         probes[i].current_star = current_group.stars[i];
       }
 
-
       if (current_group.valid(wfsmag, gdrmag)) {
         if ( !has_collisions_in_parts(current_group, probes, obscuration, N_OK_OBSCRD_FOR_4PROBE) ) {
           populate_backward_transfers(probes, current_group, stars, wfsmag, gdrmag);
 
-          // add nobacktrack logic
           bool nobacktrack = false;
           for (Probe p : probes) {
             if (p.needs_transfer && p.backward_transfers.size() == 0) {
@@ -348,6 +450,12 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
     return false;
 }
 
+/**
+   Determines whether or not the given wfsmag has a valid probe configuration in the given starfield.
+   
+   - The flag N_OK_OBSCRD_FOR_PHASING is the number of probes that are ok to be obscured. Since
+     the phasing calculation only cares about having three stars, this flag is 1.
+**/
 bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probes, double maglim, Polygon M3) {
   for (int i=0; i<probestars.size(); i++) {
     probestars[i].push_back(probes[i].default_star);
@@ -368,6 +476,12 @@ bool is_valid_phasing_mag(vector< vector<Star> > probestars, vector<Probe> probe
   return false;
 }
 
+/**
+   Read a starbase star catalogue file and populate a list Star objects. This list represents
+   a single starfield.
+   
+   - Reading starts after line 2 because the first two lines are the header and the dashed line.
+**/
 vector<Star> load_stars(string filename) {
     vector<Star> stars;
     vector<string> tokens;
@@ -400,6 +514,13 @@ vector<Star> load_stars(string filename) {
     return stars;
 }
 
+/**
+   This function filters the four lists of Stars (one for each probe) for stars that
+   are at least as bright as the given magnitude. This is done to narrow down the number
+   of calculations that have to be done for a given starfield.
+   
+   - The 'bin' param is the magnitude.
+**/
 vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int bin) {
   vector< vector<Star> > result;
   vector<Star> probeX_stars;
@@ -417,6 +538,13 @@ vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int 
   return result;
 }
 
+/**
+   Return a list of filenames in the given directory. This function also takes a regular
+   expression that can be used to match only filenames of a certain pattern. In the main
+   program this regex is simply ".*" to match all files.
+   
+   - This function is used to read the names of star catalogues.
+**/
 vector<string> files_in_dir(string dirname, string regexp) {
   ostringstream path;
   vector<string> filenames;
@@ -438,6 +566,10 @@ vector<string> files_in_dir(string dirname, string regexp) {
   return filenames;
 }
 
+/**
+   Write the coordinates of all stars in a list to a file. This function is used to record
+   a starfield when a valid config is found.
+**/
 void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   std::ofstream fout;
   fout.open(filename);
@@ -451,6 +583,15 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
   fout.close();
 }
 
+/**
+   This function controls the iteration over multiple files, testing each one and recording
+   whether or not the starfield given in the file supports a valid configuration for the given
+   phasing magnitude.
+   
+   - When a valid file is found, the starfield in the file is written to a file in the 'starfiles'
+     directory. This info is recorded so that the visual simulation is able to display starfields
+     over the probes.
+**/
 int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probes,
                                int maglim, int nfiles, Polygon M3) {
   int valid_files = 0;
@@ -476,6 +617,19 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
   return valid_files;
 }
 
+/**
+   This function controls the iteration over multiple files, testing each one and recording
+   whether or not the starfield given in the file supports a valid configuration for the given
+   magnitude pair.
+
+   - The first thing this function does is choose to run the tracking or non-tracking test. The functions
+     used for both those tests have the same api, and therefore a function pointer can be switched depending
+     on the 'tracking' parameter that is passed in.
+     
+   - When a valid file is found, the starfield in the file is written to a file in the 'starfiles'
+     directory. This info is recorded so that the visual simulation is able to display starfields
+     over the probes.
+**/
 int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes, int wfsmag, int gdrmag,
                               int nfiles, Polygon obscuration, bool tracking) {
   int valid_files = 0;
@@ -509,44 +663,36 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
   return valid_files;
 }
 
+/**
+   Load the polygon that represents the m3 obscuration
+**/
 Polygon get_m3_obscuration() {
   return load_poly("m3_obsc.txt");
 }
 
+/**
+   Load the polygon that represents the gclef obscuration
+**/
 Polygon get_gclef_obscuration() {
   return load_poly("gclef_obsc.txt");
 }
 
 
 int main(int argc, char *argv[]) {
-  string slider_body_file  = "probe_slider_body.txt";
-  string slider_shaft_file = "probe_slider_shaft.txt";
-  string baffle_tube_file  = "probe_baffle_tube.txt";
+  string slider_body_file  = "probe_slider_body_25mm.txt";
+  string slider_shaft_file = "probe_slider_shaft_25mm.txt";
+  string baffle_tube_file  = "probe_baffle_tube_25mm.txt";
 
-  Probe probe1(0,   25, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe2(90,  25, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe3(180, 25, slider_body_file, slider_shaft_file, baffle_tube_file);
-  Probe probe4(270, 25, slider_body_file, slider_shaft_file, baffle_tube_file);
-
-  Star probe1default(0,     1000,  20, 0);
-  Star probe2default(-1000, 0,     20, 0);
-  Star probe3default(0,     -1000, 20, 0);
-  Star probe4default(1000,  0,     20, 0);
-
-  probe1.default_star = probe1default;
-  probe2.default_star = probe2default;
-  probe3.default_star = probe3default;
-  probe4.default_star = probe4default;
-
-  Point origin(0, 0);
+  Probe probe1(0,   slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe2(90,  slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe3(180, slider_body_file, slider_shaft_file, baffle_tube_file);
+  Probe probe4(270, slider_body_file, slider_shaft_file, baffle_tube_file);
 
   vector<Probe> probes;
   probes.push_back(probe1);
   probes.push_back(probe2);
   probes.push_back(probe3);
   probes.push_back(probe4);
-
-  vector<Star>  stars;
 
   Polygon GCLEF = get_gclef_obscuration();
   Polygon M3    = get_m3_obscuration();

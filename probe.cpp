@@ -57,10 +57,9 @@ Point calculate_baffle_ctr(Polygon baffle_tube) {
   return Point(0, baffle_tube.min_abs_y());
 }
 
-Probe::Probe(double _angle, double _padding, string slider_body_file,
+Probe::Probe(double _angle, string slider_body_file,
              string slider_shaft_file, string baffle_tube_file) {
   angle   = _angle;
-  padding = _padding;
 
   Base_SliderBody  = load_poly(slider_body_file).rotate(angle * (PI / 180));
   Base_SliderShaft = load_poly(slider_shaft_file).rotate(angle * (PI / 180));
@@ -84,6 +83,7 @@ Probe::Probe(double _angle, double _padding, string slider_body_file,
   
   axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
   center = axis;
+  default_star = axis.rotate(angle);
 
   radius = 1300;
 

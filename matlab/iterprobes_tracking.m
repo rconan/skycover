@@ -1,4 +1,4 @@
-function iterprobes_tracking(filename)
+function iterprobes_tracking(starfield_dir, filename)
 
     dims = [4 4 4 4];
     probes = read_polygons(filename, dims);
