@@ -117,7 +117,7 @@ bool Polygon::point_in_poly(Point p) {
   return oddNodes;
 }
 
-olygon Polygon::rotate(double angle) {
+Polygon Polygon::rotate(double angle) {
   Polygon rotated_poly;
   
   for (Point pt : points) {

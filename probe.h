@@ -13,8 +13,7 @@ class Probe {
 
  public:
   Probe();
-  Probe(double _angle, double _padding, string slider_body_file,
-               string slider_shaft_file, string baffle_tube_file);
+  Probe(double _angle, string slider_body_file, string slider_shaft_file, string baffle_tube_file);
   ~Probe();
 
   Point center;

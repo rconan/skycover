@@ -148,7 +148,7 @@ vector<Star> apply_indices(vector< vector<Star> > probestars, vector<int> indice
 void print_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     vector<Polygon> transformed_parts = probes[i].transform_parts(probes[i].current_star.point());
-    for (Polygon part : transform_parts) {
+    for (Polygon part : transformed_parts) {
       part.polyprint();
     }
   }

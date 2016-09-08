@@ -53,13 +53,13 @@ Polygon load_poly(string filename) {
   return poly;
 }
 
-Point calculate_shaft_front(Polygon slider_shaft) {
-  return Point(0, slider_shaft.min_abs_y());
-}
-
-Point calculate_baffle_ctr(Polygon baffle_tube) {
-  return Point(0, baffle_tube.min_abs_y());
-}
+// Point calculate_shaft_front(Polygon slider_shaft) {
+//   return Point(0, slider_shaft.min_abs_y());
+// }
+// 
+// Point calculate_baffle_ctr(Polygon baffle_tube) {
+//   return Point(0, baffle_tube.min_abs_y());
+// }
 
 /**
    Probe constructor.
@@ -98,7 +98,7 @@ Probe::Probe(double _angle, string slider_body_file,
   
   axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
   center = axis;
-  default_star = axis.rotate(angle);
+  default_star = Star(axis.rotate(angle).x, axis.rotate(angle).y, 20, 0);
 
   radius = 1300;
 

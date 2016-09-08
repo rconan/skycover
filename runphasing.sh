@@ -9,5 +9,5 @@ fi
 
 for wfsmag in 13 14 15 16 17 18 19; do
     echo -ne "$wfsmag\t"
-    ./skycov $wfsmag 0 $nfiles
+    ./skycov --phasing --m3 --notrack --noprint $wfsmag 0 $nfiles
 done
