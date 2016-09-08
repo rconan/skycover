@@ -1,4 +1,4 @@
-function iterprobes(filename, varargin)
+function iterprobes(starfield_dir, filename)
 
     dims = [4 4 4 4];
     probes = read_polygons(filename, dims);
@@ -44,7 +44,7 @@ function iterprobes(filename, varargin)
     end
     
     for i=1:nconfigurations
-        starfile = sprintf('../starfiles/starfield%d.cat', i);
+        starfile = sprintf(starfield_dir, i);
         [starsx, starsy] = readstars(starfile);
         
         
@@ -57,11 +57,6 @@ function iterprobes(filename, varargin)
         end
         
         starplot = plot(starsx, starsy, 'b.', 'markersize', 12);
-            
-    if nargin > 1
-        [x, y] = readstars(varargin{1});
-        plot(x, y, 'b.', 'markersize', 12);
-    end
     
     pause(1.5);
         

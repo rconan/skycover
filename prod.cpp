@@ -4,6 +4,22 @@
 #include "star.h"
 using namespace std;
 
+/**
+   The CombinationGenerator is an iterator that computes the outer product
+   of a list of lists. To make it generic (aka not caring about types) it
+   acts on the sizes of each list in the outer product computation. Upon
+   being asked for the next iteration, it will return the indices of the
+   elements in each sublist present in that iteration. You can then use
+   this index list to get the correct elements.
+   
+   The algorithm works like this. Start with an index list of all zeros.
+   When asked for the next iteration, return the index list. Then, to update
+   the index list: start from the end of the list and look for a position
+   where the index is less than the max index into that list (aka the index
+   is not equal to the length of that list minus one). Increment that index
+   and set all indices up to the end of the index list to zero.
+**/
+
 vector<int> zeros(int n) {
     int i;
     vector<int> result;

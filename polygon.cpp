@@ -15,6 +15,9 @@ Edge::Edge(Point _a, Point _b) {
 Edge::Edge() { }
 Edge::~Edge() { }
 
+/**
+   Return a perpendicular unit vector.
+**/
 Point Edge::normal() {
   Point N;
   N.y = a.x - b.x;
@@ -90,6 +93,9 @@ vector<double> Polygon::xcoords() {
 
   return result;
 }
+/**
+   Code snippet from here: http://alienryderflex.com/polygon/
+**/
 
 bool Polygon::point_in_poly(Point p) {
   int   i, j = npoints-1;
@@ -111,31 +117,7 @@ bool Polygon::point_in_poly(Point p) {
   return oddNodes;
 }
 
-double Polygon::min_abs_y() {
-  double result = DBL_MAX;
-
-  for (Point pt : points) {
-    if (abs(pt.y) < result) {
-      result = pt.y;
-    }
-  }
-
-  return result;
-}
-
-double Polygon::min_abs_x() {
-  double result = DBL_MAX;
-
-  for (Point pt : points) {
-    if (pt.x < result) {
-      result = pt.x;
-    }
-  }
-
-  return result;
-}
-
-Polygon Polygon::rotate(double angle) {
+olygon Polygon::rotate(double angle) {
   Polygon rotated_poly;
   
   for (Point pt : points) {

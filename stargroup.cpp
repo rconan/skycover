@@ -5,6 +5,13 @@
 #include <cmath>
 using namespace std;
 
+/**
+   A StarGroup is the data structure that holds the list of stars
+   in a probe configuration. It is useful to have its own data structure
+   so that it can independently check for the right number of magnitudes,
+   and do so for phasing and 4probe configurations.
+**/
+
 #define PI 3.14159265350
 
 StarGroup::StarGroup() { }

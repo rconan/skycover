@@ -15,10 +15,10 @@ using namespace std;
 #define MAXRANGE         (0.167 * 3600)
 
 
-std::vector<std::string> split(const std::string &text, char sep) {
-    std::vector<std::string> tokens;
-    std::size_t start = 0, end = 0;
-    while ((end = text.find(sep, start)) != std::string::npos) {
+vector<string> split(const string &text, char sep) {
+    vector<string> tokens;
+    size_t start = 0, end = 0;
+    while ((end = text.find(sep, start)) != string::npos) {
         tokens.push_back(text.substr(start, end - start));
         start = end + 1;
     }
@@ -33,8 +33,12 @@ Point scale(Point v, double m) {
 
 Probe::Probe() { }
 
+/**
+   Read a polygon from a textfile. Format of the textfile is a single x,y pair per
+   line, separated by a single tab.
+**/
 Polygon load_poly(string filename) {
-  std::ifstream infile(filename);
+  ifstream infile(filename);
   vector<string> points;
   string line;
   Polygon poly;
@@ -57,6 +61,17 @@ Point calculate_baffle_ctr(Polygon baffle_tube) {
   return Point(0, baffle_tube.min_abs_y());
 }
 
+/**
+   Probe constructor.
+
+   - First loads the polygons that make up the probe. These polygons are rotated by the
+     given angle.
+   - The 'Base_' polygons are set so that the probe position can be reset after being moved.
+   - Radius us hardcoded in the constructor.
+   - rotate_about is the point the probe is translated to before being rotated when it is being
+     moved over a star. For the configuration where each probe rotates about its own pivot,
+     this attribute should be the origin.
+**/
 Probe::Probe(double _angle, string slider_body_file,
              string slider_shaft_file, string baffle_tube_file) {
   angle   = _angle;
@@ -104,7 +119,12 @@ double abs_angle_between_vectors(Point u, Point v) {
                (vector_length(v) * vector_length(u)) );
 }
 
-// Should return the angle that u must rotate to rest parallel to v.
+/**
+   The absolute value of the angle between vector can be found by the formula
+   given in abs_angle_between_vectors, but in order for the probe to move in the
+   correct direction, we need to check how the probe's axis and the star are positioned
+   relative to each other.
+**/
 double angle_between_vectors(Point u, Point v) {
   Point origin(0, 1);
   int mod = -1;
@@ -219,6 +239,14 @@ mm -> degrees -> arcminutes
 (mm / 3600) * 60
 **/
 
+/**
+   The distance between the star and the front of the probe's slider shaft is given
+   by the formula
+
+       115.6 + 78.5*(r/10)^2
+
+   where r is the radial distance of the star from the origin and units are in mm.
+**/
 double baffle_separation(Point p) {
   Point origin;
   Point p_location_arcminutes((p.x / 3600) * 60, (p.y / 3600) * 60);
@@ -238,6 +266,16 @@ vector<Point> get_points(vector<Polygon> polygons) {
   return res;
 }
 
+/**
+   Both the slider shaft and the slider body can be positioned correctly using this function.
+   The positions of the slider polygons depend on the baffle separation, which is given as a parameter.
+   
+   - The polygons of the slider shaft and slider body are rotated the angle theta, no matter what. This
+     rotation happens outside this function, but it is useful to know that it doesn't need to be calculated
+     based on baffle separation.
+   - The amount of translation forward or backward along the axis made by the origin (0, 0) and the star
+     is determined by how far the slider must be from the star (the baffle separation).
+**/
 Polygon Probe::move_slider(Polygon slider, double theta, Point pivot, double baffle_sep) {
   Point w = SliderShaftFront.translate(center, rotate_about).rotate(theta).translate(rotate_about, center);
   Point v = Point(pivot.x - w.x, pivot.y - w.y);
@@ -259,6 +297,16 @@ Polygon Probe::move_slider(Polygon slider, double theta, Point pivot, double baf
   return newslider;
 }
 
+/**
+   Translate the baffle tube so that it can be rotated into position over the point pt.
+   
+   - Create a point, p, that is the given point translated to have the probe center as its origin.
+   - Find the angle between the probe's axis and this new point. (this is the angle the probe will
+     have to rotate to be positioned over pt.)
+   - Find the point on the probe's axis where the p would intersect if rotated around the probe's center.
+   - The distance between this intersection and the probe's center is the amount the baffle tube must be
+     translated.
+**/
 void Probe::position_baffle_tube(Point pt) {
   Point origin(0, 0);
   Point c = scale(center, -1);
@@ -288,6 +336,10 @@ void Probe::reset_parts() {
   parts.push_back(SliderShaft);
 }
 
+/**
+   Carry out the translation and rotation of all the probe's parts so that it is
+   positioned over the given point, pivot.
+**/
 vector<Polygon> Probe::transform_parts(Point pivot) {
   vector<Polygon> transformed_parts;
   Point origin(0, 0);
@@ -307,7 +359,6 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
     transformed_parts.push_back(retranslated);
   }
 
-
   transformed_parts[0] = move_slider(transformed_parts[0], theta, pivot, baffle_separation(pivot));
   transformed_parts[2] = move_slider(transformed_parts[2], theta, pivot, baffle_separation(pivot));
 
@@ -316,6 +367,11 @@ vector<Polygon> Probe::transform_parts(Point pivot) {
   return transformed_parts;
 }
 
+/**
+   Code derived from explanation given here: http://paulbourke.net/geometry/circlesphere/
+   Returns the two points (or none, if there are no intersections) of the circles described
+   by the arguments.
+**/
 vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1) {
   double d = distance(P0, P1);
   vector<Point> intersections;
@@ -344,6 +400,16 @@ vector<Point> circle_intersections(Point P0, double r0, Point P1, double r1) {
   return intersections;
 }
 
+/**
+   Returns the amount of angle (in rads) the probe can track the given star.
+
+   - How far a probe can track a star is equal to the angle between the star's
+     current position and the position it will have when it leaves the probe's range.
+   - The position a star will have when it leaves the probe's range is found by the clockwise
+     point in the intersection of two circles: the one created by the probe's center and its
+     radius, and the one created by the origin and the radius given by the distance between
+     the star and the origin.
+**/
 double Probe::track_distance(Star s) {
   Point origin(0, 0);
   
@@ -401,6 +467,17 @@ void sort_by_transfer_distance(vector<Star>& stars, int p, int q, Point center, 
     }
 }
 
+/**
+   Ask a probe to track for a given distance (in degrees).
+
+   - If the probe can follow its base star for the given distance, it does so by adding
+     the given distance to its 'distance_tracked' attribute.
+   - If the probe cannot follow its base star for the given distance, it looks for a
+     star that will be in its range after the starfield has rotated the given distance.
+   - If such a star is found, the probe switches its base star and current star.
+   - If no backtrack is found, the probe returns a -1 telling the caller it was unable to
+     track anything for the given distance.
+**/
 int Probe::track(double dist) {
   if (! in_range(base_star.rotate(dist))) {
 
@@ -432,6 +509,10 @@ int Probe::track(double dist) {
   return 0;
 }
 
+/**
+   Return the two points where a star's rotation circle will intersect with the
+   probe's tracking circle.
+**/
 vector<Point> Probe::get_range_extremes(Star s) {
   Point origin(0, 0);
   vector<Point> intersections = circle_intersections(center, radius, origin, distance(origin, s.point()));
@@ -439,6 +520,9 @@ vector<Point> Probe::get_range_extremes(Star s) {
   return intersections;
 }
 
+/**
+   Is the given star in the annulus created by the 6 and 10 arc minute constraints?
+**/
 bool safe_distance_from_center(Star star) {
   Point star_pt(star.x, star.y), origin(0, 0);
   
@@ -451,6 +535,18 @@ bool safe_distance_from_center(Star star) {
   }
 }
 
+/**
+   Determine whether or not the given star is inside the probe's sweep.
+   
+   - If the star's rotation circle does not intersect with the probe's sweep,
+     the star is not within range.
+   - If the star is further from the probe than the probe's radius, the star
+     is not within range.
+   - If the star is not within the constrained annulus, the star is not within
+     range.
+   - If the star is not within the +-30 degree probe sweep angle constraint, the
+     star is not within range.
+**/
 bool Probe::in_range(Star s) {
   vector<Point> range_extremes = get_range_extremes(s);
 
@@ -482,6 +578,9 @@ bool Probe::in_range(Star s) {
   return false;
 }
 
+/**
+   What amount of rotation (in radians) before a star is within the probe's range?
+**/
 double Probe::distance_till_inrange(Star s) {
   vector<Point> range_extremes = get_range_extremes(s);
 
@@ -499,6 +598,10 @@ bool Probe::intersects_path_of(Star s) {
   return get_range_extremes(s).size() == 2;
 }
 
+/**
+   Return a list of all the stars in the starfield that have at least the given
+   magnitude.
+**/
 void Probe::get_backward_transfers(vector<Star> stars, double track_dist, double maglim) {
   for (Star s : stars) {
     if (s.r <= maglim) {
@@ -517,6 +620,10 @@ bool member(Star s, vector<Star> list) {
   return false;
 }
 
+/**
+   Look for a star that will be in range after the given distance, and update current
+   and base star attributes if one is found.
+**/
 int Probe::backtrack(double dist) {
   sort_by_transfer_distance(backward_transfers, 0, backward_transfers.size(), center, current_star);
 

@@ -164,6 +164,11 @@ system. For the tracking setting, a set of coordinates will be printed
 out for every polygon in the system, for every one of 60 positions
 along the 60 degree tracking path.
 
+With the print option, the program will also attempt to print the
+valid starfields to files in a directory named 'starfiles'. So if you
+would like to use the print option to see the visual simulation, you
+should create a folder in the toplevel called 'starfiles'.
+
 The coordinates of a polygon are printed out in ordered pairs in a
 single line. The m3 obscuration is printed out like this
 
@@ -182,19 +187,20 @@ command
 
 To run the visual simulations, open matlab and cd to the matlab
 directory. To run a non-tracking simulation, run
-`iterprobes('../sky.out')`. The argument to iterprobes is the file
+`iterprobes('../starfiles', '../sky.out')`. The arguments to
+iterprobes are the directory containing the starfields and the file
 containing the polygon coordinates printed out by the simulation. To
-run a tracking simulation, run
-`iterprobes_tracking('../sky.out')`. The argument is the same.
+run a tracking simulation, run `iterprobes_tracking('../starfiles',
+'../sky.out')`. The arguments are the same.
 
 Beware there are a few limitations of the matlab scripts that I
 haven't found a good way to abstract away. If you would like to
 simulate a dgnf test, you must go into the file, either iterprobes.m
 or iterprobes_tracking.m, and change the 'dims' variable at the top of
-the script from [4 4 4 4] to [4 4 4] (that is, from four 4's to three
-4's). This is because the dgnf doesn't have an obscuration polygon to
-read out of the file. The 'dims' variable gives the number of point on
-the polygons described in the file.
+the script from [4 4 4 4] to [4 4 4]. This is because the dgnf doesn't
+have an obscuration polygon to read out of the file. The 'dims'
+variable gives the number of point on the polygons described in the
+file.
 
 Another thing you must do if you would like to run a dgnf visual
 simulation is go into the file, iterprobes.m or iterprobes_tracking.m,

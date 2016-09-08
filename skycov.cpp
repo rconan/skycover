@@ -604,9 +604,12 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
 
     if (is_valid_phasing_mag(current_bin, probes, maglim, M3)) {
       valid_files++;
-      ostringstream starfile;
-      starfile << "starfiles/starfield" << valid_files << ".cat";
-      write_stars(stars, starfile.str(), maglim, maglim);
+
+      if (PRINT) {
+        ostringstream starfile;
+        starfile << "starfiles/starfield" << valid_files << ".cat";
+        write_stars(stars, starfile.str(), maglim, maglim);
+      }
     } else {
       ostringstream starfile;
       // starfile << "starfiles/starfield" << valid_files << "_invalid.cat";
@@ -650,9 +653,12 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
 
     if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration)) {
       valid_files++;
-      ostringstream starfile;
-      starfile << "starfiles/starfield" << valid_files << ".cat";
-      write_stars(stars, starfile.str(), wfsmag, gdrmag);
+
+      if (PRINT) {
+        ostringstream starfile;
+        starfile << "starfiles/starfield" << valid_files << ".cat";
+        write_stars(stars, starfile.str(), wfsmag, gdrmag);
+      }
     } else {
       ostringstream starfile;
       // starfile << "starfiles/starfield" << valid_files << "_invalid.cat";

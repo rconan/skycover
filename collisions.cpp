@@ -13,6 +13,10 @@ double dotprod(Point a, Point b) {
   return sum;
 }
 
+/**
+   The projection of a polygon onto an axis is the minimum and maximum
+   dotproduct of all of its points with the axis.
+**/
 Point project(Polygon poly, Point axis) {
   int i;
   Point projection;
@@ -55,6 +59,14 @@ int intersecting(Point u, Point v) {
   return res;
 }
 
+/**
+   The Separating Axis Theorem says that if two convex polygons are not
+   intersecting, there is an axis perpendicular to one of the edges of one of the
+   polygons, that when both polygons are projected onto this axis, the projections
+   do not intersect.
+   
+   This function returns those axes perpendicular to the edges of a polygon.
+**/
 vector<Point> SAT_axes(Polygon poly) {
   vector<Edge> edges = poly.edges();
   vector<Point> axes;
@@ -67,6 +79,9 @@ vector<Point> SAT_axes(Polygon poly) {
   return axes;
 }
 
+/**
+   Tests polygon collision by the separating axis theorem.
+**/
 int colliding(Polygon poly1, Polygon poly2) {
   Point poly1_projection, poly2_projection;
   
@@ -93,18 +108,12 @@ int colliding(Polygon poly1, Polygon poly2) {
   return res;
 }
 
+/**
+   This function tests for the intersection of two probes represented as multiple
+   polygons. The function tests for collisions of each part of one probe with
+   each part of the other.
+**/
 int colliding_in_parts(vector<Polygon> probe1parts, vector<Polygon> probe2parts) {
-  for (int i=0; i<probe1parts.size(); i++) {
-    Polygon probe1part = probe1parts[i];
-    for (int j=0; j<probe2parts.size(); j++) {
-      Polygon probe2part = probe2parts[j];
-
-      if (colliding(probe1part, probe2part)) {
-        return 1;
-      }
-    }
-  }
-
   for (Polygon probe1part : probe1parts) {
     for (Polygon probe2part : probe2parts) {
       if (colliding(probe1part, probe2part)) {
@@ -124,6 +133,9 @@ bool star_is_obscured(Star s, Polygon obscuration) {
   return false;
 }
 
+/**
+   Determine whether or not the probes would be obscured given their current_star attribute.
+**/
 bool config_is_obscured_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   for (int i=0; i<probes.size(); i++) {
     if (star_is_obscured(probes[i].current_star, obscuration)) {
@@ -134,6 +146,10 @@ bool config_is_obscured_with_current_stars(vector<Probe> probes, Polygon obscura
   return false;
 }
 
+/**
+   Given a stargroup, test whether the probes would be obscured when transformed to
+   intersect light from the stars in the stargroup.
+**/
 bool config_is_obscured(StarGroup group, vector<Probe> probes, Polygon obscuration, int max_obscured) {
   int obscured_probes = 0;
   for (int i=0; i<group.stars.size(); i++) {
@@ -149,6 +165,13 @@ bool config_is_obscured(StarGroup group, vector<Probe> probes, Polygon obscurati
   return false;
 }
 
+/**
+   Determine whether a series of probes made up of multiple polygons each will have collisions or
+   be obscured if transformed to intersect light from the stars in the given stargroup.
+   
+   - First test collisions between the first and last probes, then test all other pairs (1 and 2,
+     2 and 3, 3 and 4).
+**/
 int has_collisions_in_parts(StarGroup group, vector<Probe> probes, Polygon obscuration, int max_obscured) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];
@@ -189,6 +212,10 @@ int has_collisions_in_parts(StarGroup group, vector<Probe> probes, Polygon obscu
   return 0;
 }
 
+/**
+   Perform the same test as has_collisions_in_parts, but this time use the probes' current_star
+   attribute.
+**/
 int has_collisions_with_current_stars(vector<Probe> probes, Polygon obscuration) {
   Probe probe1 = probes[0];
   Probe probe2 = probes[probes.size()-1];

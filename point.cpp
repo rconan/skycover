@@ -13,6 +13,10 @@ Point::Point(double _x, double _y) {
 
 Point::~Point(void) { }
 
+/**
+   If you want to translate a point along a given vector, pass
+   in (0, 0) as the old origin and your vector as the new origin.
+**/
 Point Point::translate(Point old_orig, Point new_orig) {
   double x_diff = new_orig.x - old_orig.x;
   double y_diff = new_orig.y - old_orig.y;
