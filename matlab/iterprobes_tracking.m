@@ -1,4 +1,4 @@
-function iterprobes_tracking(starfield_dir, filename)
+function M = iterprobes_tracking(starfield_dir, filename)
 
     dims = [4 4 4 4];
     probes = read_polygons(filename, dims);
@@ -33,7 +33,7 @@ function iterprobes_tracking(starfield_dir, filename)
     probe_handles = double.empty(1, npolygons, 0);
     num_valid_configs = size(probes, 2) / (nconfigurations * npolygons);
     
-    % M = [];
+    M = [];
     for i=1:num_valid_configs
         starfile = sprintf('%s/starfield%d.cat', starfield_dir, i);
         [starsx, starsy] = readstars(starfile);
@@ -55,9 +55,11 @@ function iterprobes_tracking(starfield_dir, filename)
             [rotatedx, rotatedy] = rotate2dcoord(starsx, starsy, (j-1) * (pi / 180));
             starplot = plot(rotatedx, rotatedy, 'b.', 'markersize', 12);
            
-            % f = getframe(gcf);
-            % M = [M f f];
-            pause(0.08);
+                    
+            f = getframe(gcf);
+            M = [M f f f f];
+           
+            pause(0.05);
         
             if j < nconfigurations
                 for k=1:npolygons
@@ -72,9 +74,10 @@ function iterprobes_tracking(starfield_dir, filename)
                 delete(starplot);
             end
         end
-        
-        % f = getframe(gcf);
-        % M = [M f f f f f f f f f f f f f f f f];
+
+                            
+            f = getframe(gcf);
+            M = [M f f f f f f f f f f f f f f f f f f f];
         
         pause(1);
     end

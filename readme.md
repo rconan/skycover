@@ -142,8 +142,72 @@ concave shapes.
 
 ## Results
 
-These plots display the results of running the simulation in different
-configurations.
+The output of the run4probe.sh script will look something like this
+
+    grid	config	wfsmag	gdrmag	prob
+    ----	------	------	------	----
+    grid	dgnf	13	13	0.01
+    grid	dgnf	13	14	0.07
+    grid	dgnf	13	15	0.16
+    grid	dgnf	13	16	0.19
+    grid	dgnf	13	17	0.19
+    grid	dgnf	13	18	0.19
+    grid	dgnf	13	19	0.19
+    grid	dgnf	14	13	0.17
+    grid	dgnf	14	14	0.18
+    grid	dgnf	14	15	0.53
+    grid	dgnf	14	16	0.66
+    grid	dgnf	14	17	0.68
+    grid	dgnf	14	18	0.68
+    grid	dgnf	14	19	0.68
+    grid	dgnf	15	13	0.57
+    grid	dgnf	15	14	0.69
+    grid	dgnf	15	15	0.7
+    grid	dgnf	15	16	0.98
+    grid	dgnf	15	17	0.99
+    grid	dgnf	15	18	0.99
+    grid	dgnf	15	19	0.99
+    grid	dgnf	16	13	0.77
+    grid	dgnf	16	14	0.98
+    grid	dgnf	16	15	0.99
+    grid	dgnf	16	16	0.99
+    grid	dgnf	16	17	1
+    grid	dgnf	16	18	1
+    grid	dgnf	16	19	1
+    grid	dgnf	17	13	0.78
+    grid	dgnf	17	14	0.99
+    grid	dgnf	17	15	1
+    grid	dgnf	17	16	1
+    grid	dgnf	17	17	1
+    grid	dgnf	17	18	1
+    grid	dgnf	17	19	1
+    grid	dgnf	18	13	0.78
+    grid	dgnf	18	14	0.99
+    grid	dgnf	18	15	1
+    grid	dgnf	18	16	1
+    grid	dgnf	18	17	1
+    grid	dgnf	18	18	1
+    grid	dgnf	18	19	1
+    grid	dgnf	19	13	0.78
+    grid	dgnf	19	14	0.99
+    grid	dgnf	19	15	1
+    grid	dgnf	19	16	1
+    grid	dgnf	19	17	1
+    grid	dgnf	19	18	1
+    grid	dgnf	19	19	1
+
+This is starbase table format with two header rows and columns
+separated by a single tab. Included in the repo is a python script
+called <b>plotgrid.py</b>, which can be used to create graphs using
+output in the above format. The plotgrid script takes three command
+line arguments.
+
+    python plotgrid.py <input file> <output file> <plot title>
+
+The input file should be in the starbase format above. The output of
+run4probe.sh. The output file will be a .png image. And the plot title
+would be something like "M3 Obscuration - 60 degree Tracking (25mm
+buffer)."
 
 ![DGNF - No Tracking (10mm buffer)](plots/4probe_100dgnf_notrack_10mm.png)
 
@@ -181,7 +245,7 @@ text it's possible to write a parser/plotter in any language.
 This is a frame displaying one valid configuration output by the
 command
 
-    ./skycove --4probe --m3 --notrack --print 15 15 10 > sky.out
+    ./skycov --4probe --m3 --notrack --print 15 15 10 > sky.out
 
 ![Valid config. example](/plots/valid_config_ex.png)
 
@@ -214,3 +278,25 @@ directory. Each run of the simulation overwrites these files to
 contain the starfields from valid files found during that
 simulation. So the simulation might look off if you are viewing
 polygons from a few simulations ago.
+
+## Making a Move of the Visual Simulation
+
+The iterprobes_tracking matlab function records each frame it displays
+in a matrix that it returns to the caller. If you are just interested
+in watching the simulation once, there is no need to capture this
+value. But returning the captured frames means it is possible to
+record a visual simulation as a movie file.
+
+To capture the recorded frames from an iterprobes run, assign a return
+variable like this
+
+    M = iterprobes_tracking('../starfiles', '../sky.out')
+
+Then you can call the included iterprobes_movie function like so,
+passing in a filename where the movie will be stored.
+
+    iterprobes_movie(M, 'iterprobes.avi')
+
+Be careful about how many configurations you record in the movie. File
+size will increase rapidly. A movie showing four valid tracking
+configurations can run to almost 20M.
