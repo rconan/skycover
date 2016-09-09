@@ -30,19 +30,6 @@ function iterprobes(starfield_dir, filename)
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     
-    for i=1:4
-        [x1, y1] = rotate2dcoord(-axes(2*i-1), -axes(2*i), 30 * (pi / 180));
-        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
-        
-        [x2, y2] = rotate2dcoord(-axes(2*i-1), -axes(2*i), -30 * (pi / 180));
-        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
-        
-        % h = fill([axes(2*i-1), axes(2*i-1)+x1, axes(2*i-1)+x2], ...
-        %          [axes(2*i),   axes(2*i)+y1,   axes(2*i)+y2], 'r');
-             
-        % set(h, 'facealpha', 0.5);
-    end
-    
     for i=1:nconfigurations
         starfile = sprintf(starfield_dir, i);
         [starsx, starsy] = readstars(starfile);

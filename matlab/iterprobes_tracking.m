@@ -22,19 +22,6 @@ function iterprobes_tracking(starfield_dir, filename)
         plot([0, 3600*axes(i*2-1)], [0, 3600*axes(i*2)], 'k');
     end
     
-    for i=1:4
-        [x1, y1] = rotate2dcoord(-axes(2*i-1), -axes(2*i), 30 * (pi / 180));
-        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
-        
-        [x2, y2] = rotate2dcoord(-axes(2*i-1), -axes(2*i), -30 * (pi / 180));
-        % plot([axes(2*i-1), axes(2*i-1)+x], [axes(2*i), axes(2*i)+y], 'r');
-        
-        % h = fill([axes(2*i-1), axes(2*i-1)+x1, axes(2*i-1)+x2], ...
-        %          [axes(2*i),   axes(2*i)+y1,   axes(2*i)+y2], 'r');
-             
-        % set(h, 'facealpha', 0.5);
-    end
-
     darkgrey    = [0.662745, 0.662745, 0.662745];
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
