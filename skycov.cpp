@@ -7,12 +7,11 @@
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
-#include <regex>
 #include <vector>
 #include <map>
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <string.h>
 #include <sstream>
 using namespace std;
 
@@ -497,15 +496,6 @@ vector<Star> load_stars(string filename) {
             double r = stod(tokens[18]);
             double bear = stod(tokens[3]);
 
-            smatch match;
-            regex bear_regex("([0-9]+):([0-9]+):([0-9]+)");
-            if (regex_match(tokens[3], match, bear_regex)) {
-              int degrees = stoi(match.str(1));
-              int minutes = stoi(match.str(2));
-              double seconds = stod(match.str(3));
-              bear = degrees + ( (minutes + (seconds / 60)) / 60);
-            }
-
             stars.push_back(Star(x, y, r, bear));
         }
         current_line++;
@@ -539,13 +529,11 @@ vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int 
 }
 
 /**
-   Return a list of filenames in the given directory. This function also takes a regular
-   expression that can be used to match only filenames of a certain pattern. In the main
-   program this regex is simply ".*" to match all files.
-   
+   Return a list of filenames in the given directory.   
+
    - This function is used to read the names of star catalogues.
 **/
-vector<string> files_in_dir(string dirname, string regexp) {
+vector<string> files_in_dir(string dirname) {
   ostringstream path;
   vector<string> filenames;
   DIR *pDIR;
@@ -553,11 +541,9 @@ vector<string> files_in_dir(string dirname, string regexp) {
   if( (pDIR = opendir(dirname.c_str())) != NULL ) {
     while( (entry = readdir(pDIR)) != NULL ) {
       if( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 ) {
-        if (regex_match(entry->d_name, regex(regexp))) {
-          path.str(std::string());
-          path << dirname << entry->d_name;
-          filenames.push_back(path.str());
-        }
+        path.str(std::string());
+        path << dirname << entry->d_name;
+        filenames.push_back(path.str());
       }
     }
     closedir(pDIR);
@@ -685,9 +671,9 @@ Polygon get_gclef_obscuration() {
 
 
 int main(int argc, char *argv[]) {
-  string slider_body_file  = "probe_slider_body_25mm.txt";
-  string slider_shaft_file = "probe_slider_shaft_25mm.txt";
-  string baffle_tube_file  = "probe_baffle_tube_25mm.txt";
+  string slider_body_file  = "probe_slider_body.txt";
+  string slider_shaft_file = "probe_slider_shaft.txt";
+  string baffle_tube_file  = "probe_baffle_tube.txt";
 
   Probe probe1(0,   slider_body_file, slider_shaft_file, baffle_tube_file);
   Probe probe2(90,  slider_body_file, slider_shaft_file, baffle_tube_file);
@@ -754,7 +740,7 @@ int main(int argc, char *argv[]) {
     nfiles = atoi(argv[7]);
   }
 
-  vector<string> starfield_files = files_in_dir("Bes/", ".*");
+  vector<string> starfield_files = files_in_dir("Bes/");
 
   double valid_files = 0;
   if (phasing) {
