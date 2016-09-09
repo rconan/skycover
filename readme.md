@@ -279,7 +279,7 @@ contain the starfields from valid files found during that
 simulation. So the simulation might look off if you are viewing
 polygons from a few simulations ago.
 
-## Making a Move of the Visual Simulation
+## Making a Movie of the Visual Simulation
 
 The iterprobes_tracking matlab function records each frame it displays
 in a matrix that it returns to the caller. If you are just interested
