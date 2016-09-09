@@ -631,10 +631,12 @@ int Probe::backtrack(double dist) {
   for (int i=0; i<backward_transfers.size(); i++) {
     Star s = backward_transfers[i];
 
+    /* Only backtrack to stars we haven't used */
     if (member(s, used_transfers)) {
       continue;
     }
 
+    /* Only backtrack if the star is in range */
     if (in_range(s.rotate(dist))) {
       found = true;
       base_star = s;
