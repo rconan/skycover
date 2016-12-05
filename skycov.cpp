@@ -206,24 +206,17 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Po
     }
 
 
-    /* remove this section and in for loop add % probes.size() */
-
     while (has_collisions_with_current_stars(probes, obscuration)) {  /* check current config as a whole */
 
-	/* if it fails, then break it down and check by pairs */
-      if (colliding_in_parts(probes[0].transform_parts(probes[0].current_star.point()),
-                             probes[probes.size()-1].transform_parts(probes[probes.size()-1].current_star.point()))) {
-        if (probes[probes.size()-1].backtrack(i * (PI / 180)) == -1) {
-	    /* Didn't find a star to backtrack to */
-	    nobacktrack = true;
-          break;
-        }
-      }
+	/**
+	   if config fails, then break it down and check by pairs, backtracking a probe if necessary 
+	**/
 
-      for (int k=0; k<probes.size()-1; k++) {
+      for (int k=0; k<probes.size(); k++) {
         if (colliding_in_parts(probes[k].transform_parts(probes[k].current_star.point()),
-                               probes[k+1].transform_parts(probes[k+1].current_star.point()))) {
+                               probes[(k+1)%probes.size()].transform_parts(probes[(k+1)%probes.size()].current_star.point()))) {
           if (probes[k].backtrack(i * (PI / 180)) == -1) {
+	    /* Didn't find a star to backtrack to */
             nobacktrack = true;
             break;
           }
@@ -244,7 +237,7 @@ bool trackable(vector<Probe> probes, StarGroup group, int wfsmag, int gdrmag, Po
       if (nobacktrack) { break; }
     }
 
-    /* add nobacktrack check here */
+    /* Add a nobacktrack break check here? */
   }
 
   if (nobacktrack) {
