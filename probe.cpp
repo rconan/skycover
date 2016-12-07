@@ -91,7 +91,7 @@ Probe::Probe(double _angle, string slider_body_file,
   // SliderShaftFront = calculate_shaft_front(SliderShaft).rotate(angle * (PI / 180));
   // BaffleTubeCtr    = calculate_baffle_ctr(BaffleTube).rotate(angle * (PI / 180));
 
-  SliderShaftFront = Point(0, 115.6).rotate(angle * (PI / 180));
+  SliderShaftFront = Point(0, 84).rotate(angle * (PI / 180));
   BaffleTubeCtr = Point(0, 409).rotate(angle * (PI / 180));
 
   Point origin_vector(0, 1000);
@@ -243,7 +243,7 @@ mm -> degrees -> arcminutes
    The distance between the star and the front of the probe's slider shaft is given
    by the formula
 
-       115.6 + 78.5*(r/10)^2
+       84 + 78.5*(r/10)^2
 
    where r is the radial distance of the star from the origin and units are in mm.
 **/
@@ -252,7 +252,7 @@ double baffle_separation(Point p) {
   Point p_location_arcminutes((p.x / 3600) * 60, (p.y / 3600) * 60);
   double r = distance(p_location_arcminutes, origin);
   
-  return 115.6 + 78.5 * pow(r/10, 2);
+  return 84 + 78.5 * pow(r/10, 2);
 }
 
 vector<Point> get_points(vector<Polygon> polygons) {
