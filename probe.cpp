@@ -95,12 +95,15 @@ Probe::Probe(double _angle, string slider_body_file,
   BaffleTubeCtr = Point(0, 409).rotate(angle * (PI / 180));
 
   Point origin_vector(0, 1000);
-  
-  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
+
+  // The radial position of the rotary axis.
+  radius = 1400;
+
+  // BAM: Not sure what the 1.3 is for.  I'm changing radius from 1300 to 1400, so I'll change this also...
+  //  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
+  axis = scale(origin_vector.rotate(angle * (PI / 180)), radius / 1000.0);
   center = axis;
   default_star = Star(axis.rotate(angle).x, axis.rotate(angle).y, 20, 0);
-
-  radius = 1300;
 
   needs_transfer = false;
 
@@ -240,12 +243,15 @@ mm -> degrees -> arcminutes
 **/
 
 /**
-   The distance between the star and the front of the probe's slider shaft is given
+   The distance between the star and the front of the probe's slider shaft is approximated
    by the formula
 
-       84 + 78.5*(r/10)^2
+       84 + 79.9*(r/10)^2
 
    where r is the radial distance of the star from the origin and units are in mm.
+   The 79.9 comes from the AGWSFocalPlaneCurvature.xlsx spreadsheet, 
+         assuming a parabola that goes through the 10 arcmin point.
+   The 84 comes from geometry given in AGWS_Probe_Profile_Sky_Coverage_Sim_20160831.pptx
 **/
 double baffle_separation(Point p) {
   Point origin;
