@@ -10,7 +10,10 @@ if len(sys.argv) < 4:
 tab = starbase.Starbase(sys.argv[1])
 
 fig = plt.figure()
-fig.suptitle('Sky Coverage', fontsize=14, fontweight='bold')
+fig.suptitle('Sky Coverage at Galactic Pole', fontsize=14, fontweight='bold')
+
+wfslim = 18.0
+ttylim = 16.7
 
 gmin = 13
 wmin = 13
@@ -29,10 +32,10 @@ zlist=[]
 figlist=[]
 
 levels={}
-levels["dgnf"]=array([0.2,0.4,0.6,0.8,0.9,0.99,1.0])
-levels["folded"]=array([0.2,0.4,0.6,0.8,0.9,0.99,1.0])
-levels["folded-track60"]=array([0.2,0.4,0.6,0.8,0.9,0.99,1.0])
-levels["phasing"]=array([0.2,0.4,0.6,0.65,0.7,0.75,0.8])
+levels["dgnf"]           = array([0.2,0.4,0.6,0.8,0.9,0.95,0.99,1.0])
+levels["folded"]         = array([0.2,0.4,0.6,0.8,0.9,0.95,0.99,1.0])
+levels["folded-track60"] = array([0.2,0.4,0.6,0.8,0.9,0.95,0.99,1.0])
+levels["phasing"]        = array([0.2,0.4,0.6,0.65,0.7,0.75,0.8])
 
 
 for i,config in enumerate(configs):
@@ -42,8 +45,8 @@ for i,config in enumerate(configs):
     ax = fig.add_subplot(1,1,1)
     axlist.append(ax)
     plt.grid(True)
-    ax.set_ylabel('Guide mag')
-    ax.set_xlabel('WFS mag')
+    ax.set_ylabel('TT7 magnitude limit')
+    ax.set_xlabel('WFS magnitude limit')
     ax.set_title(labels[i])
     zlist.append(zeros(X.shape))
 
@@ -69,5 +72,7 @@ for i,config in enumerate(configs):
     fig=figlist[ii[config]]
     CS=ax.contour(X,Y,zlist[i],levels[config])
     ax.clabel(CS, inline=1, fontsize=10)
+
+    ax.plot(wfslim, ttylim, "b+", markersize=20, markeredgewidth=2)
 
     fig.savefig(sys.argv[2])
