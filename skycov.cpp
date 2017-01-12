@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -25,6 +26,8 @@ using namespace std;
 #define N_OK_OBSCRD_FOR_4PROBE  0
 
 bool PRINT = false;
+
+bool phasing;
 
 /**
    Params:  vector of Star vectors.
@@ -458,7 +461,7 @@ bool is_valid_pair_tracking(vector<Star> stars, vector< vector<Star> > probestar
 
 /**
    Determines whether or not the given wfsmag has a valid probe configuration in the given starfield.
-   
+
    - The flag N_OK_OBSCRD_FOR_PHASING is the number of probes that are ok to be obscured. Since
      the phasing calculation only cares about having three stars, this flag is 1.
 **/
@@ -495,15 +498,34 @@ vector<Star> load_stars(string filename) {
 
     int current_line = 1;
     string line; getline(infile, line);
+    tokens = split(line, '\t');
+
+    int idx = find(tokens.begin(), tokens.end(), "x")    - tokens.begin();
+    int idy = find(tokens.begin(), tokens.end(), "y")    - tokens.begin();
+    int idr = find(tokens.begin(), tokens.end(), "R")    - tokens.begin();
+    int idb = find(tokens.begin(), tokens.end(), "Bear") - tokens.begin();
+    int idj = find(tokens.begin(), tokens.end(), "J")    - tokens.begin();
+    int idrj= find(tokens.begin(), tokens.end(), "RJ")   - tokens.begin();
+    int siz = tokens.size();
+
     for ( ; getline(infile, line); ) {
         if (current_line > 2) {
             tokens = split(line, '\t');
-            double x = stod(tokens[0]) * 3600;
-            double y = stod(tokens[1]) * 3600;
-            double r = stod(tokens[18]);
-            double bear = stod(tokens[3]);
+            double x = stod(tokens[idx]) * 3600;
+            double y = stod(tokens[idy]) * 3600;
+            double r = stod(tokens[idr]);
+	    double j;
+	    if (idj<siz) {
+		j = stod(tokens[idj]);
+	    } else if (idrj<siz) {
+		j = r - stod(tokens[idrj]);
+	    } else if (phasing) {
+		printf("No column name J or RJ found.  Exiting");
+		exit(1);
+	    }
+            double bear = stod(tokens[idb]);
 
-            stars.push_back(Star(x, y, r, bear));
+            stars.push_back(Star(x, y, r, j, bear));
         }
         current_line++;
     }
@@ -525,9 +547,9 @@ vector< vector<Star> > probestars_in_bin(vector< vector<Star> > probestars, int 
   for ( vector<Star> stars : probestars ) {
     probeX_stars.clear();
     for ( Star s : stars ) {
-      if (s.r <= bin) {
-        probeX_stars.push_back(s);
-      }
+	if ((phasing && s.j <= bin) || (!phasing && s.r <=bin)) {
+	    probeX_stars.push_back(s);
+	}
     }
     result.push_back(probeX_stars);
   }
@@ -586,14 +608,14 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
      over the probes.
 **/
 int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probes,
-                               int maglim, int nfiles, Polygon M3) {
+                               double maglim, int nfiles, Polygon M3) {
   int valid_files = 0;
 
   for (int i=0; i<nfiles; i++) {
     vector<Star> stars = load_stars(starfld_files[i]);
 
     vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
-    vector< vector<Star> > current_bin = probestars_in_bin(probestars, maglim);
+    vector< vector<Star> > current_bin = probestars_in_bin(probestars, ceil(maglim));
 
     if (is_valid_phasing_mag(current_bin, probes, maglim, M3)) {
       valid_files++;
@@ -626,7 +648,7 @@ int number_valid_phasing_files(vector<string> starfld_files, vector<Probe> probe
      directory. This info is recorded so that the visual simulation is able to display starfields
      over the probes.
 **/
-int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes, int wfsmag, int gdrmag,
+int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes, double wfsmag, double gdrmag,
                               int nfiles, Polygon obscuration, bool tracking) {
   int valid_files = 0;
 
@@ -642,7 +664,7 @@ int number_valid_4probe_files(vector<string> starfld_files, vector<Probe> probes
     vector<Star> stars = load_stars(starfld_files[i]);
 
     vector< vector<Star> > probestars  = get_probe_stars(stars, probes);
-    vector< vector<Star> > current_bin = probestars_in_bin(probestars, max(wfsmag, gdrmag));
+    vector< vector<Star> > current_bin = probestars_in_bin(probestars, ceil(max(wfsmag, gdrmag)));
 
     if (is_valid_pair(stars, current_bin, probes, wfsmag, gdrmag, obscuration)) {
       valid_files++;
@@ -710,9 +732,10 @@ int main(int argc, char *argv[]) {
   argv[7] -> number of files to test
   **/
   
-  bool    phasing, tracking;
+  bool    tracking;
   Polygon obscuration;
-  int     wfsmag, gdrmag, nfiles;
+  double     wfsmag, gdrmag, phsmag; 
+  int nfiles;
 
   if (argc < 8) {
     cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <--print | --noprint> <wfsmag> <gdrmag> <nfiles>" << endl;
@@ -742,16 +765,17 @@ int main(int argc, char *argv[]) {
       PRINT = true;
     }
 
-    wfsmag = atoi(argv[5]);
-    gdrmag = atoi(argv[6]);
-    nfiles = atoi(argv[7]);
+    wfsmag = atof(argv[5]);
+    gdrmag = atof(argv[6]);
+    phsmag = atof(argv[7]);
+    nfiles = atoi(argv[8]);
   }
 
   vector<string> starfield_files = files_in_dir("Bes/");
 
   double valid_files = 0;
   if (phasing) {
-    valid_files = number_valid_phasing_files(starfield_files, probes, wfsmag, nfiles, M3);
+    valid_files = number_valid_phasing_files(starfield_files, probes, phsmag, nfiles, M3);
   } else {
     valid_files = number_valid_4probe_files(starfield_files, probes, wfsmag, gdrmag, nfiles, obscuration, tracking);
   }

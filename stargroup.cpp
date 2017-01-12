@@ -48,7 +48,7 @@ int int_frequency(int x, vector<int> l) {
   return freq;
 }
 
-int StarGroup::wfsmag() {
+double StarGroup::wfsmag() {
   vector<int>::iterator mag;
   for (mag=mags.begin(); mag != mags.end(); mag++) {
     if (int_frequency(*mag, mags) >= 3) {
@@ -59,7 +59,7 @@ int StarGroup::wfsmag() {
   return 0;
 }
 
-int StarGroup::gdrmag() {
+double StarGroup::gdrmag() {
   if (int_frequency(mags[0], mags) == 4) { return mags[0]; }
 
   vector<int>::iterator mag;
@@ -79,7 +79,7 @@ string StarGroup::magpair() {
     return res.str();
 }
 
-int StarGroup::valid_for_phasing(int J) {
+int StarGroup::valid_for_phasing(double J) {
   for (int i=0; i<stars.size(); i++) {
     for (int j=0; j<stars.size(); j++) {
       if (i == j) { continue; }
@@ -92,7 +92,7 @@ int StarGroup::valid_for_phasing(int J) {
   
   int magcount = 0;
   for (Star s : stars) {
-    if (s.r <= J) {
+    if (s.j <= J) {
       magcount++;
     }
   }
@@ -104,7 +104,7 @@ int StarGroup::valid_for_phasing(int J) {
   return 1;
 }
 
-int StarGroup::valid(int W, int G) {
+int StarGroup::valid(double W, double G) {
   Point origin(0, 1);
   double angle;
 

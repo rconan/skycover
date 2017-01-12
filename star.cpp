@@ -6,11 +6,12 @@
 
 Star::Star() { }
 
-Star::Star(double _x, double _y, double _r, double _bear) {
+Star::Star(double _x, double _y, double _r, double _j, double _bear) {
   pt = Point(_x, _y);
   x  = pt.x;
   y  = pt.y;
   r  = _r;
+  j  = _j;
   bear  = _bear;
 }
 
@@ -30,12 +31,12 @@ Point Star::point() {
 }
 
 void Star::print() {
-  fprintf(stderr, "x: %f, y: %f, r: %f\n", pt.x, pt.y, r);
+    fprintf(stderr, "x: %f, y: %f, r: %f, j: %f\n", pt.x, pt.y, r, j);
 }
 
 Star Star::rotate(double dist) {
   Point p = point().rotate(dist);
-  return Star(p.x, p.y, r, bear);
+  return Star(p.x, p.y, r, j, bear);
 }
 
 bool Star::equals(Star other) {

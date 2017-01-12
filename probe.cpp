@@ -103,7 +103,7 @@ Probe::Probe(double _angle, string slider_body_file,
   //  axis = scale(origin_vector.rotate(angle * (PI / 180)), 1.300);
   axis = scale(origin_vector.rotate(angle * (PI / 180)), radius / 1000.0);
   center = axis;
-  default_star = Star(axis.rotate(angle).x, axis.rotate(angle).y, 20, 0);
+  default_star = Star(axis.rotate(angle).x, axis.rotate(angle).y, 20, 20, 0);
 
   needs_transfer = false;
 
