@@ -1,0 +1,13 @@
+rm Bes
+ln -s ./Bes90 Bes
+runphasing.sh 1000 >& results.phasing.notrack.1000.b90
+
+#rm Bes
+#ln -s ~/GMT/Starprob/Bes59 Bes
+#runphasing.sh 100 >& results.phasing.notrack.100.b59
+
+#rm Bes
+#ln -s ~/GMT/Starprob/Bes30 Bes
+#runphasing.sh 100 >& results.phasing.notrack.100.b30
+
+
