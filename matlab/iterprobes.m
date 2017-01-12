@@ -23,15 +23,19 @@ function iterprobes(starfield_dir, filename)
     darkgrey    = [0.662745, 0.662745, 0.662745];
     dimgray     = [0.411765, 0.411765, 0.411765];
     sgidarkgray = [0.333333, 0.333333, 0.333333];
-        
-    colors = [sgidarkgray; dimgray; darkgrey];
+    red = [1.0, 0.0, 0.0];
+    grn = [0.0, 1.0, 0.0];
+    blu = [0.0, 0.0, 1.0];
+    
+   colors = [sgidarkgray; dimgray; darkgrey];
 
     npolygons = 13;
     nconfigurations = size(probes, 2) / npolygons;
     probe_handles = double.empty(1, npolygons, 0);
     
     for i=1:nconfigurations
-        starfile = sprintf(starfield_dir, i);
+        starfile = sprintf('%s/starfield%d.cat', starfield_dir, i);
+        fprintf('Starfile: %s\n',starfile)
         [starsx, starsy] = readstars(starfile);
         
         

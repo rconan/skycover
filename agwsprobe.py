@@ -43,7 +43,7 @@ for i,buffer in enumerate([0, b]):
             [slider_shaft_front,  slider_shaft_back,    slider_body_front,  slider_body_back,  slider_body_back,  slider_body_front, slider_shaft_back,  slider_shaft_front,  slider_shaft_front],
             color="r", linestyle=ltype[i]
            )
-    pl.plot(0,0, "g+")
+    pl.plot(0,0, "b+")
 
     if (i==0):
         pl.text(-50, baffle_tube_front-b-50, str(2*baffle_tube_width),color="b")

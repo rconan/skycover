@@ -139,7 +139,8 @@ script takes one argument which is the buffer size in mm by which to
 increase the effective probe size so as to set a minimum distance
 between the physical probes.  The minimum distance between probes is
 twice the buffer size.  The script produces a figure probe.png showing
-the probe geometry.
+the probe geometry.  The default buffer size is 15mm.  To change the
+geometry, run the agwsprobe.py script before running skycov.
 
 
 There are two reasons the probes are described as multiple
