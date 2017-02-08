@@ -1,3 +1,3 @@
-function [x, y] = readstars(starfile)
-    [x, y] = readcoords2d(starfile);
+function [x, y, r] = readstars(starfile)
+    [x, y, r] = readcoords2d(starfile);
 end

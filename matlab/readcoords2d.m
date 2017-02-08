@@ -1,7 +1,7 @@
-function [x, y] = readcoords2d(fpath)
+function [x, y, r] = readcoords2d(fpath)
 
     fmt = '%f';
-    sizeA = [2 inf];
+    sizeA = [3 inf];
     fileID = fopen(fpath, 'r');
     
     A = fscanf(fileID, fmt, sizeA);
@@ -10,5 +10,6 @@ function [x, y] = readcoords2d(fpath)
     
     x = A(1,:);
     y = A(2,:);
+    r = A(3,:);
     
 end

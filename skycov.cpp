@@ -569,7 +569,7 @@ void write_stars(vector<Star> stars, string filename, int wfsmag, int gdrmag) {
 
   for (Star s : stars) {
     if (s.r < max(wfsmag, gdrmag)) {
-      fout << s.x << " " << s.y << endl;
+      fout << s.x << " " << s.y << " " << s.r << endl;
     }
   }
 
