@@ -4,8 +4,8 @@ SRCS = point.cpp probe.cpp star.cpp stargroup.cpp polygon.cpp collisions.cpp pro
 CFLAGS = -O
 #CFLAGS = -g
 
-#CC   = g++
-CC   = /opt/stow/gcc-6.2.0/bin/g++ -Wl,-rpath=/opt/stow/gcc-6.2.0/lib64 
+CC   = g++
+#CC   = /opt/stow/gcc-6.2.0/bin/g++ -Wl,-rpath=/opt/stow/gcc-6.2.0/lib64 
 
 all: probegeom skycov
 
