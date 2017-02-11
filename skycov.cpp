@@ -722,7 +722,8 @@ int main(int argc, char *argv[]) {
   argv[4] -> print configurations or not
   argv[5] -> wfsmag
   argv[6] -> gdrmag
-  argv[7] -> number of files to test
+  argv[7] -> phmag
+  argv[8] -> number of files to test
   **/
   
   bool    tracking;
@@ -730,8 +731,8 @@ int main(int argc, char *argv[]) {
   double     wfsmag, gdrmag, phsmag; 
   int nfiles;
 
-  if (argc < 8) {
-    cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <--print | --noprint> <wfsmag> <gdrmag> <nfiles>" << endl;
+  if (argc < 9) {
+    cout << "usage: ./skycov <--4probe | --phasing> <--gclef | --m3 | --dgnf> <--track | --notrack> <--print | --noprint> <wfsmag> <gdrmag> <phmag> <nfiles>" << endl;
     return 0;
   } else {
     if (strcmp(argv[1], "--phasing") == 0) {
