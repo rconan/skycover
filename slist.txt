@@ -1,0 +1,18 @@
+#
+# All these accessible for either DGNF or M3
+0.05	0.15	-0.15	0	0	-0.15	0.15	0 
+#
+# This one obscured by M3; OK for DGNF
+0.0	0.15	-0.15	0	0	-0.15	0.15	0 
+#
+# Can't go inside 6 arcmin
+0	0.099	-0.15	0	0	-0.15	0.15	0 
+#
+# Two probes at the same position 
+0.1	0.1	-0.15	0	0	-0.15	0.1	0.1
+#
+# OK
+0.05	0.1	-0.15	0	0	-0.15	0.12	0.1
+#
+# Two probes too close
+0.07	0.1	-0.15	0	0	-0.15	0.12	0.1
