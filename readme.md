@@ -226,6 +226,20 @@ buffer)."
 
 ![GCLEF - Tracking (10mm buffer)](plots/4probe_100gclef_track_10mm.png)
 
+## Validate probe positions
+
+If instead of computing the sky coverage probability you simply want to validate a number of probe configurations, use the program <b>agwsvalid</b>.
+
+    ./agwsvalid <--m3 | --gclef | --dgnf> <--plot | --bool> < inputfile
+
+The input file consists of 8 numbers per line: four x y pairs of star positions expressed in degrees.  Lines beginning with # will be ignored.
+
+The obscuration configurations are the same as above in <b>skycover</b>.  The --bool flag will cause the program to print 1 or 0 for each line processed.   Alternately, the flag --plot will generate output suitable for use in the visual simulation described in the next section.  Text diagnostics are printed to standard error.
+
+An example text file <b>slist.txt</b> is provided:
+
+    ./agwsvalid --m3 --bool <slist.txt
+
 ## Visual Simulation
 
 The '--print' option enables viewing the valid configurations found by
